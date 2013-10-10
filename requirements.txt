@@ -1,2 +1,3 @@
-lamson
+lamson==1.3.4
 django==1.5.4
+south
