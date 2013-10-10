@@ -1,0 +1,2 @@
+lamson
+django==1.5.4
