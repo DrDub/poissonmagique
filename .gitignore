@@ -1,0 +1,6 @@
+*.pyc
+*~
+logs/*
+*.sqlite3
+config/localsettings.py
+run/queue

@@ -1,8 +1,18 @@
 from django.db import models
 
+class UserState(models.Model):
+    created_on = models.DateTimeField(auto_now_add=True)
+    state_key = models.CharField(max_length=512)
+    from_address = models.EmailField()
+    state = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return "%s:%s (%s)" % (self.state_key, self.from_address, self.state)
+
 class Human(models.Model):
     name = models.CharField(max_length=200)
     mail_address = models.EmailField(db_index=True, unique=True)
+    campaign = models.ForeignKey(Campaign, null=True)
 
 class Campaign(models.Model):
     name = models.CharField(max_length=200, db_index=True)
@@ -17,6 +27,8 @@ class Campaign(models.Model):
 class Character(models.Model):
     controller = models.ForeignKey(Human)
     
+    name = models.CharField(max_length=200)
+    mail_address = models.EmailField(db_index=True, unique=True)
     # TODO: much more to come...
 
 class Fragment(models.Model):
