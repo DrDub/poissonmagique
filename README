@@ -5,3 +5,10 @@ It is a mail server + web interface to help with the GM tasks of modifying and f
 WIP, see http://poissonmagique.net for details.
 
 
+Deployment
+----------
+
+$ python webapp/manage.py syncdb
+$ lamson start
+
+

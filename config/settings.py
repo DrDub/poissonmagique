@@ -1,20 +1,15 @@
 # This file contains python variables that configure Lamson for email processing.
 import logging
+import os
 
-# You may add additional parameters such as `username' and `password' if your
-# relay server requires authentication, `starttls' (boolean) or `ssl' (boolean)
-# for secure connections.
-relay_config = {'host': 'localhost', 'port': 8825}
 
-receiver_config = {'host': 'localhost', 'port': 8823}
-
-handlers = ['app.handlers.game']
+handlers = ['app.handlers.game', 'app.handlers.log']
 
 server_name_config = 'localhost'
 
 template_config = {'dir': 'app', 'module': 'templates'}
 
-os.environ['DJANGO_SETTINGS_MODULE’] = 'webapp.settings’
+os.environ['DJANGO_SETTINGS_MODULE'] = 'webapp.settings'
 
 owner_email_config = None
 contact_email_config = None
@@ -25,6 +20,9 @@ try:
     from localsettings import *
 except ImportError:
     pass
+
+relay_config = {'host': 'localhost', 'port': 25}
+receiver_config = { 'host': server_name_config, 'port': 1220 }
 
 router_defaults = {'host': '((%s)|(localhost))' % [ server_name_config ]}
 
