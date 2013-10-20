@@ -20,9 +20,12 @@ class Human(models.Model):
     name = models.CharField(max_length=200)
     mail_address = models.EmailField(db_index=True, unique=True)
     # each human can be associated only with one campaign at a given time
-    campaign = models.ForeignKey('Campaign', null=True)
+    campaign = models.ForeignKey('Campaign', null=True, blank=True)
     user = models.ForeignKey(User, null=True)
     is_bouncing = models.BooleanField(default=False)
+
+    def __unicode__(self):
+        return self.name + u" <" + self.mail_address + u">"
 
 class Campaign(models.Model):
     name = models.CharField(max_length=200, db_index=True)
@@ -38,14 +41,31 @@ class Campaign(models.Model):
 
     # TODO: pointer to state
 
+    def __unicode__(self):
+        if self.is_active:
+            return self.name
+        else:
+            return u"-" + self.name + u"-"
+
 class Character(models.Model):
     controller = models.ForeignKey(Human)
+    campaign = models.ForeignKey(Campaign)
     
     name = models.CharField(max_length=200)
     mail_address = models.EmailField(db_index=True, unique=True)
 
-    is_active = models.BooleanField(default=True, db_index=True)
     # TODO: much more to come...
+
+    def is_npc(self):
+        return self.controller == self.campaign.gm
+
+    def __unicode__(self):
+        base = self.name + u" (" + (u"NPC" if self.is_npc() else u"PC") + u")"
+        if self.campaign.is_active:
+            return base
+        else:
+            return u"-" + base + u"-"
+
 
 class Fragment(models.Model):
     """

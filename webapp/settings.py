@@ -64,7 +64,7 @@ STATIC_ROOT = ''
 
 # URL prefix for static files.
 # Example: "http://media.lawrence.com/static/"
-STATIC_URL = '/static/'
+STATIC_URL = '/media/'
 
 # Additional locations of static files
 STATICFILES_DIRS = (
@@ -82,7 +82,7 @@ STATICFILES_FINDERS = (
 )
 
 # Make this unique, and don't share it with anybody.
-SECRET_KEY = '#x9)!fd*h@sd*5hw9jx4&amp;8z009qq#225)yc1aiw+@s*e6fpa3k'
+SECRET_KEY = 'YOU BETTER CHANGE THIS!'
 
 # List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
