@@ -114,6 +114,8 @@ EMAIL_HOST=lamson_settings.relay_name_config
 SITE_NAME = lamson_settings.web_server_name_config
 THEME_ACCOUNT_ADMIN_URL = 'admin:index'
 
+LOGIN_URL='/account/login'
+
 ROOT_URLCONF = 'webapp.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.

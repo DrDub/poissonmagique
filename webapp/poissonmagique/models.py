@@ -36,10 +36,11 @@ class Human(models.Model):
 class Campaign(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     url = models.URLField(null=True, blank=True)
-    # INVARIANT: is_active => \forall human in players \union { gm  }: human.campaign == self
+    # INVARIANT: is_active => \forall human in players \union { gm }: human.campaign == self
     gm = models.ForeignKey(Human, related_name='gm')
     # players does not include gm
-    players = models.ForeignKey(Human, related_name='player')
+    players = models.ManyToManyField(Human, related_name='players', default=None)
+    #players = models.ForeignKey(Human, related_name='player')
     is_active = models.BooleanField(default=True, db_index=True)
     language = models.CharField(max_length=2)
 
@@ -90,6 +91,16 @@ class Message(Fragment):
     """
 
     receivers = models.ForeignKey(Character, related_name='receiver')
-
     parts = models.ManyToManyField(Fragment, related_name='part')
 
+from account.signals import email_confirmed, user_signed_up
+
+def create_human(user, form, **kwargs):
+    human = Human.objects.filter(user=user)
+    if len(human) > 0:
+        return
+
+    human = Human(name=user.username, mail_address=user.email, user=user)
+    human.save()
+
+user_signed_up.connect(create_human)

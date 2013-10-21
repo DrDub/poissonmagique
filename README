@@ -10,5 +10,8 @@ Deployment
 
 $ PYTHONPATH=$PWD python webapp/manage.py syncdb
 $ lamson start
+$ PYTHONPATH=$PWD python webapp/manage.py runserver
+
+(you'll need to log into the django admin and change the Site from the default example.com)
 
 
