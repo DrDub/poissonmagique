@@ -4,3 +4,6 @@ logs/*
 *.sqlite3
 config/localsettings.py
 run/queue
+webapp/dispatch.wsgi
+webapp/localsettings.py
+run
