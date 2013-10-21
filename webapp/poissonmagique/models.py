@@ -27,6 +27,12 @@ class Human(models.Model):
     def __unicode__(self):
         return self.name + u" <" + self.mail_address + u">"
 
+    def is_gm(self):
+        campaign = self.campaign
+        if campaign is None:
+            return False
+        return campaign.gm == self
+
 class Campaign(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     url = models.URLField(null=True, blank=True)

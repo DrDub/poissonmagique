@@ -28,7 +28,7 @@ def START(message, host=None):
     human = find_sender(message)
     if human is None:
         # unknown person
-        logging.debug("MESSAGE to gm@%s from %s, unkwnown sender" % (host, str(message['from'])))
+        logging.debug("MESSAGE to gm@%s from %s, unknown sender" % (host, str(message['from'])))
         if silent:
             #TODO log to unknown sender queue
             return
@@ -60,13 +60,13 @@ def START(message, host=None):
         new_from = 'gm@%s' % (server_name,)
         character = find_character(human)
         if character is not None:
-            new_from = character.mail_address
+            new_from = "%s <%s>" % (character.name, character.mail_address)
 
         msg_id = message['Message-ID'][1:-1]
         new_message = MailResponse(To=gm.mail_address, From=new_from, 
                                    Subject=message['Subject'],
-                                   Body="See it online at %s/msg/%s.\n\n%s" % (
-            web_server_name, msg_id, "" if message.base.parts else message.body()))
+                                   Body="Original sender: %s.\nSee it online at http://%s/msg/%s.\n\n%s" % (
+                human.mail_address, web_server_name, msg_id, "" if message.base.parts else message.body()))
         new_message.attach_all_parts(message)
         new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % (
                 server_name,)
@@ -90,3 +90,4 @@ def NO_GAME(message, host=None):
                            Subject="You're not playing a game in this server.")
     logging.debug("MESSAGE to gm@%s from %s, unknown campaign" % (host, str(message['from'])))
     relay.deliver(no_game)
+    return START # reset

@@ -1,9 +1,29 @@
-<html>
-<head>
-<title>Welcome to Poisson Magique!</title>
-</head>
-<body>
-<center>
-<img src="/media/fish22.png">
-</center>
-</html>
+{% extends "theme_bootstrap/banner_base.html" %}
+
+
+{% block head_title %}Welcome to Poisson Magique!  {% endblock %}
+
+    {% block banner %}
+        <h1>Welcome to Poisson Magique!</h1>
+        <p>Play-by-email role-playing game gateway and Web interface with an emphasis in Call of Cthulhu.</p>
+        <p><a class="btn btn-primary btn-lg" href="http://poissonmagique.net">Learn more &raquo;</a></p>
+    {% endblock %}
+
+        {% block column-1 %}
+	    <p style="text-align:center"><img class="img-rounded" src="/media/fish22.png"></p>
+        {% endblock %}
+
+        {% block column-2 %}
+            <h2>For the GM</h2>
+            <p>Poisson Magique is a mail server + web interface to help with the GM tasks of modifying and forwarding emails in a PbP campaign.</p>
+            <p>Each of the emails sent by the users can be split, re-assembled and modified for forwarding.</p>
+            <p><a class="btn btn-default" href="http://poissonmagique.net">View details &raquo;</a></p>
+        {% endblock %}
+
+        {% block column-3 %}
+            <h2>For the Player</h2>
+            <p>Each character (player and non-player) has an unique email address on the server (e.g., john.smith@...). The player can communicate seamlessly with each character by emailing them (the email might get refused if the player is not in the same room).</p>
+            <p><a class="btn btn-default" href="http://poissonmagique.net">View details &raquo;</a></p>
+        {% endblock %}
+
+

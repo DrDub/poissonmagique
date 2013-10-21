@@ -2,3 +2,7 @@ lamson==1.3.4
 django==1.5.4
 south
 psycopg2==2.3.2
+django-forms-bootstrap
+pinax-theme-bootstrap
+pinax-theme-bootstrap-account
+django-user-accounts

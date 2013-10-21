@@ -1,0 +1,30 @@
+{% extends "theme_bootstrap/base.html" %}
+
+{% block nav %}
+<ul class="nav navbar-nav">
+    <li id="tab_first">
+        <a href="/">Home</a>
+    </li>
+    <li id="tab_second" class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+            Poisson Magique
+            <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu">
+	  <li><a href="http://poissonmagique.net">poissonmagique.net</a>
+          <li><a href="https://github.com/DrDub/poissonmagique">Source Code</a></li>
+          {# TODO: add license and warranty links #}
+        </ul>
+    </li>
+</ul>
+
+<ul>
+</ul>
+{% endblock %}
+
+{% block footer %}
+Poisson Magique, Copyright (C) 2013 by <a href="http://duboue.net/">Pablo Duboue</a>.
+{% endblock %}
+
+</body>
+</html>

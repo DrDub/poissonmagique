@@ -71,6 +71,8 @@ STATICFILES_DIRS = (
     # Put strings here, like "/home/html/static" or "C:/www/django/static".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+
+    # modified in localsettings to account for pinax
 )
 
 # List of finder classes that know how to find static files in
@@ -88,8 +90,10 @@ SECRET_KEY = 'YOU BETTER CHANGE THIS!'
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
+    'django.template.loaders.eggs.Loader',
 )
+
+
 
 MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
@@ -99,17 +103,38 @@ MIDDLEWARE_CLASSES = (
     'django.contrib.messages.middleware.MessageMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "account.middleware.LocaleMiddleware",
+    "account.middleware.TimezoneMiddleware",
 )
+
+from config import settings as lamson_settings
+THEME_ACCOUNT_CONTACT_EMAIL=lamson_settings.owner_email_config
+DEFAULT_FROM_EMAIL=lamson_settings.owner_email_config
+EMAIL_HOST=lamson_settings.relay_name_config
+SITE_NAME = lamson_settings.web_server_name_config
+THEME_ACCOUNT_ADMIN_URL = 'admin:index'
 
 ROOT_URLCONF = 'webapp.urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'webapp.wsgi.application'
 
+TEMPLATE_CONTEXT_PROCESSORS = [
+    "django.core.context_processors.debug",
+    "django.core.context_processors.i18n",
+    "django.core.context_processors.media",
+    "django.core.context_processors.request",
+    'django.contrib.auth.context_processors.auth',
+    "account.context_processors.account",
+]
+
 TEMPLATE_DIRS = (
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
+
+    # this is set in localsettings
+    
 )
 
 INSTALLED_APPS = (
@@ -123,6 +148,9 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'webapp.poissonmagique',
     'south',
+    'account',
+    'pinax_theme_bootstrap_account',
+    'django_forms_bootstrap',
 )
 
 # A sample logging configuration. The only tangible logging
