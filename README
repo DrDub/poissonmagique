@@ -8,7 +8,7 @@ WIP, see http://poissonmagique.net for details.
 Deployment
 ----------
 
-$ python webapp/manage.py syncdb
+$ PYTHONPATH=$PWD python webapp/manage.py syncdb
 $ lamson start
 
 

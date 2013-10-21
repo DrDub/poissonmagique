@@ -1,12 +1,14 @@
 from webapp.poissonmagique.models import Campaign, Human, Character
 from django.core.exceptions import ObjectDoesNotExist
+from email.utils import parseaddr
+import logging
 
 def find_sender(message):
-    sender = message['from']
+    name, sender = parseaddr(message['from'])
     try:
         human = Human.objects.get(mail_address=sender)
     except ObjectDoesNotExist:
-        logging.DEBUG("Unknown sender %", sender)
+        logging.debug("Unknown sender %s", sender)
         return None
     return human
 

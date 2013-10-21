@@ -21,10 +21,10 @@ try:
 except ImportError:
     pass
 
-relay_config = {'host': 'localhost', 'port': 25}
+relay_config = {'host': relay_name_config, 'port': 25}
 receiver_config = { 'host': server_name_config, 'port': 1220 }
 
-router_defaults = {'host': '((%s)|(localhost))' % [ server_name_config ]}
+router_defaults = {'host': '((%s)|(localhost))' % ( server_name_config, ) }
 
 
 # the config/boot.py will turn these values into variables set in settings

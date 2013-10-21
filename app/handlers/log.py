@@ -1,5 +1,6 @@
 from lamson.routing import route, stateless, nolocking, Router
 from lamson import queue
+import game
 
 @route("(to)@(host)", to=".+", host=".+")
 @stateless

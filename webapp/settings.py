@@ -121,7 +121,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
-    'poissonmagique',
+    'webapp.poissonmagique',
     'south',
 )
 
