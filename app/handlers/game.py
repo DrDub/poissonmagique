@@ -1,7 +1,8 @@
 import logging
+from config.settings import relay, owner_email, silent, server_name, web_server_name
 from lamson.routing import route, route_like, stateless, Router
 from lamson.bounce import bounce_to
-from config.settings import relay, owner_email, silent, server_name
+from lamson.mail import MailResponse
 from lamson import view
 from app.model.campaign import find_sender, find_campaign_for_sender, is_gm
 from app.model.character import find_character
@@ -54,19 +55,22 @@ def START(message, host=None):
 
     if gm != human and not gm.is_bouncing:
         # send to the actual GM, if it is not bouncing
-        new_message = message.to_message()
-        msg_id = message['Message-ID']
-        new_message.epiloge = "See it online at <a href='http://%s/msg/%s'>%s/msg/%s</a>." % (
-            server_name, msg_id, server_name, msg_id )
-        new_message.add_header('X-Poisson-Magique', 'This is fictious email for an game, see %s for details' % (
-                server_name,))
-        new_message['to'] = gm.mail_address
-        # find their character
+        
+        # find their character and use it as From, if any
+        new_from = 'gm@%s' % (server_name,)
         character = find_character(human)
-        if character is None:
-            new_message['From'] = 'gm@%s' % (server_name,)
-        else:
-            new_message['From'] = character.mail_address
+        if character is not None:
+            new_from = character.mail_address
+
+        msg_id = message['Message-ID'][1:-1]
+        new_message = MailResponse(To=gm.mail_address, From=new_from, 
+                                   Subject=message['Subject'],
+                                   Body="See it online at %s/msg/%s.\n\n%s" % (
+            web_server_name, msg_id, "" if message.base.parts else message.body()))
+        new_message.attach_all_parts(message)
+        new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % (
+                server_name,)
+
         relay.deliver(new_message)
     
 # secondary entry point, messaging a character

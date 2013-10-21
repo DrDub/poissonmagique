@@ -23,8 +23,11 @@ settings.silent = settings.is_silent_config
 # owner email to send all unknown emails
 settings.owner_email = settings.owner_email_config
 
-# server, both for website and email
+# server for email
 settings.server_name = settings.server_name_config
+
+# server for website
+settings.web_server_name = settings.web_server_name_config or settings.server_name_config
 
 Router.defaults(**settings.router_defaults)
 Router.load(settings.handlers)
