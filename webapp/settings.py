@@ -184,7 +184,12 @@ LOGGING = {
     }
 }
 
+QUEUES_FOLDER="."
+
 try:
     from localsettings import *
 except ImportError:
     pass
+
+from lamson import queue
+QUEUE_FULL_LOG=queue.Queue("%s/full" % (QUEUES_FOLDER) )

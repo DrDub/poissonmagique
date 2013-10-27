@@ -5,6 +5,9 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from lamson.routing import Router
 from lamson import queue
+from queue_utils import sanity_check
+from models import MessageID
+
 
 @login_required
 def msg(request, msg_id=None):
@@ -17,11 +20,16 @@ def msg(request, msg_id=None):
 
     # check whether we can read the message
     msg = "None found"
-    full_queue = queue.Queue("/home/pm/dev/run/full")
-    for key in full_queue.keys():
+    full_queue = settings.QUEUE_FULL_LOG
+    sanity_check(full_queue)
+    try:
+        message_id = MessageID.objects.get(message_id=msg_id,queue__maildir=full_queue.dir)
+        key = message_id.key
         this_msg = full_queue.get(key)
         if this_msg is not None and this_msg['Message-ID'][1:-1] == msg_id:
             msg = this_msg
+    except MessageID.DoesNotExist:
+        pass
 
     params = { 'SITE_NAME': settings.SITE_NAME,
                'THEME_ACCOUNT_ADMIN_URL': settings.THEME_ACCOUNT_ADMIN_URL,

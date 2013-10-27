@@ -3,39 +3,17 @@
 {% block nav %}
 <ul class="nav navbar-nav">
     <li id="tab_first">
-        <a href="/">Home</a>
-    </li>
-    <li id="tab_second" class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-          Messages
-          <b class="caret"></b>
-        </a>
-        <ul class="dropdown-menu">
-	  <li><a href="/msg/all">All Messages</a></li>
-	  <li><a href="/msg/pending">Pending</a>
-          <li class="divider"></li>
-          <li><a href="/msg/new">New Message</a></li>
-        </ul>
-    </li>
-    <li id="tab_third" class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-            Poisson Magique
-            <b class="caret"></b>
-        </a>
-        <ul class="dropdown-menu">
 	  <li><a href="http://poissonmagique.net">poissonmagique.net</a></li>
-          <li><a href="https://github.com/DrDub/poissonmagique">Source Code</a></li>
-          {# TODO: add license and warranty links #}
-        </ul>
     </li>
-</ul>
-
-<ul>
+    <li id="tab_second">
+          <li><a href="https://github.com/DrDub/poissonmagique">Source Code</a></li>
+    </li>
 </ul>
 {% endblock %}
 
 {% block footer %}
-Poisson Magique, Copyright (C) 2013 by <a href="http://duboue.net/">Pablo Duboue</a>.
+Poisson Magique, Copyright (C) 2013 by <a href="http://duboue.net/">Pablo Duboue</a>. <br/>
+<small>This software comes with NO WARRANTY and it is available under the terms of the <a href="http://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0 license</a>.</small>
 {% endblock %}
 
 </body>

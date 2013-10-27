@@ -78,20 +78,44 @@ class Fragment(models.Model):
     """
     Part of a message
     """
-
     author = models.ForeignKey(Character, related_name='sender', unique=True)
     text = models.TextField()
     when = models.DateTimeField()
 
     related = models.ManyToManyField('self')
 
+class Queue(models.Model):
+    """
+    A MailDir
+    """
+    name = models.CharField(max_length=255, db_index=True, unique=True)
+    maildir = models.CharField(max_length=1024, db_index=True, unique=True)
+
+    def __unicode__(self):
+        return u"Q@" + self.name
+
+class MessageID(models.Model):
+    """
+    A message in a MailDir
+    """
+    # 255 should be enough see http://www.mail-archive.com/synalist-public@lists.sourceforge.net/msg02843.html
+    message_id = models.CharField(max_length=255, db_index=True, unique=True)
+    key = models.CharField(max_length=255, db_index=True, unique=True)
+    queue = models.ForeignKey(Queue)
+
+    def __unicode__(self):
+        return u"<" + self.message_id + u">" + self.queue.__unicode__()
+
 class Message(Fragment):
     """
     An actual email between humans in character
     """
-
+    message_id = models.CharField(max_length=255, db_index=True, unique=True)
     receivers = models.ForeignKey(Character, related_name='receiver')
     parts = models.ManyToManyField(Fragment, related_name='part')
+
+    def __unicode__(self):
+        return u"<" + self.message_id + u">"
 
 from account.signals import email_confirmed, user_signed_up
 
