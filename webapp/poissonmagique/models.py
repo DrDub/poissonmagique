@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+import bitfield
 
 class UserState(models.Model):
     """
@@ -28,8 +29,12 @@ class Human(models.Model):
     def __unicode__(self):
         return self.name + u" <" + self.mail_address + u">"
 
-    def is_gm(self):
-        campaign = self.campaign
+    def is_gm(self, campaign=None):
+        """
+        Whether this human is a GM in the campaigh s/he is playing or in a given campaign
+        """
+        if campaign is None:
+            campaign = self.campaign
         if campaign is None:
             return False
         return campaign.gm == self
@@ -83,6 +88,7 @@ class Fragment(models.Model):
     """
     author_character = models.ForeignKey(Character, null=True)
     author_human = models.ForeignKey(Human)
+    campaign = models.ForeignKey(Campaign)
     text = models.TextField()
     when = models.DateTimeField()
 
@@ -135,6 +141,10 @@ class Message(Fragment):
     receivers_character = models.ManyToManyField(Character, related_name='receiver')
     receivers_human = models.ManyToManyField(Human, related_name='receiver')
     parts = models.ManyToManyField(Fragment, related_name='part')
+    status = bitfield.BitField(flags=(
+        ('read','Read'),
+        ('deleted','Deleted'),
+        ('private','Private')), default=0)
 
     def __unicode__(self):
         return u"<" + self.message_id + u">"

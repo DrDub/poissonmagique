@@ -1,6 +1,7 @@
 from lamson import queue
 from lamson.routing import route, stateless
-from webapp.poissonmagique.models import Campaign, Human, Character, Fragment, MessageID, 
+from webapp.poissonmagique.models import Campaign, Human, Character, Fragment, MessageID,
+from webapp.poissonmagique.queue_utils import queue_push
 import logging
 
 
@@ -26,11 +27,13 @@ def START:
 
 
     # write to the campaign logging queue
-    queue.Queue("run/campaign-%d" % ( campaign.id, ))
-    queue.push(message)
+    queue = queue.Queue("run/campaign-%d" % ( campaign.id, ))
+    key = queue.push(message)
+    db_msg_id = queue_push(queue, message, key)
+    message_id = db_msg_id.message_id
     
     # TODO author_character, receivers_human
-    db_msg = Message( message_id = message['Message-ID'],
+    db_msg = Message( message_id = message_id,
                       author_human = human,
                       receivers_hyman = [ campaign.gm ] )
     db_msg.save()

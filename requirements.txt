@@ -6,3 +6,4 @@ django-forms-bootstrap
 pinax-theme-bootstrap
 pinax-theme-bootstrap-account
 django-user-accounts
+django-bitfield

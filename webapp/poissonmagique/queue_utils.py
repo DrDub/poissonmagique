@@ -3,7 +3,8 @@ from models import MessageID, Queue
 
 def sanity_check(queue):
     """
-    Check whether all the messages in the maildir are accounted for
+    Check whether all the messages in the maildir are accounted for.
+    Returns the corresponding instance for the Queue ORM.
     """
     try:
         name = queue.dir.split('/')[-1]
@@ -19,12 +20,14 @@ def sanity_check(queue):
                 msg = queue.get(key)
                 message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
                 message_id.save()
+    return db_queue
 
 def queue_push(queue, msg, key):
     """
-    Keep track a new message as it is added to a maildir
+    Keep track a new message as it is added to a maildir.
+    Returns the newly saved MessageID ORM instance.
     """
-    sanity_check(queue)
-    db_queue = Queue.objects.get(maildir=queue.dir)
+    db_queue = sanity_check(queue)
     message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
     message_id.save()
+    return message_id

@@ -3,11 +3,26 @@
 {% block body %}
 
 <div class="panel panel-default">
-  <div class="panel-heading"><h2>All Messages</h2></div>
+    <div class="panel-heading"><h2>{{ filter|yesno:"Pending,All" }} Messages</h2></div>
   <div class="panel-body">
 <ul>
 {% for msg in msgs %}
-<li><a href="/msg/{{ msg.message_id }}">from {{ msg.from }}, to {{ msg.to }}, date {{ msg.date }}</a></li>
+<li> {{ msg.when }}:
+   <a href="/msg/{{ msg.message_id }}">from 
+  {{ msg.author_human.name }} &lt;{{ msg.author_human.mail_address }}>
+    {% spaceless %}
+    {% if msg.author_character %}
+       ( {{ msg.author_character.name }} )
+    {% endif %} 
+    , 
+    {% endspaceless %}
+ to 
+  {% for rcv in msg.receivers_human %}
+    {{ msg.author_human.name }} &lt;{{ msg.author_human.mail_address }}>{% if not forloop.last %}, {% endif %}
+  {% endfor %}
+  </a></li>
+{% empty %}
+<li>No messages to show</li>
 {% endfor %}
 </ul>
 
