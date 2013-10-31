@@ -47,6 +47,7 @@ def START(message, host=None):
     logging.debug("MESSAGE to gm@%s from %s, campaign %s" % (host, str(message['from']), campaign.name))
 
     # enque for uploading
+    message['X-Poisson-Magique-Campaign'] = str(campaign.id)
     Router.UPLOAD_QUEUE.push(message)
 
     gm = campaign.gm
@@ -68,8 +69,8 @@ def START(message, host=None):
                                    Body="Original sender: %s.\nSee it online at http://%s/msg/%s.\n\n%s" % (
                 human.mail_address, web_server_name, msg_id, "" if message.base.parts else message.body()))
         new_message.attach_all_parts(message)
-        new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % (
-                server_name,)
+        new_message['X-Poisson-Magique'] = 'This is fictious email for
+                a game, see http://%s for details.' % ( server_name,)
 
         relay.deliver(new_message)
     

@@ -4,6 +4,7 @@ import os
 
 
 handlers = ['app.handlers.game', 'app.handlers.log']
+upload_handlers = ['app.handlers.upload']
 
 server_name_config = 'localhost'
 
@@ -25,6 +26,9 @@ relay_config = {'host': relay_name_config, 'port': 25}
 receiver_config = { 'host': server_name_config, 'port': 1220 }
 
 router_defaults = {'host': '((%s)|(localhost))' % ( server_name_config, ) }
+
+uploader_queue_sleep = 30
+UPLOADER_QUEUE_PATH = "run/upload"
 
 
 # the config/boot.py will turn these values into variables set in settings

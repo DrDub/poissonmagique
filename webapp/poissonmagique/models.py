@@ -19,6 +19,7 @@ class Human(models.Model):
     """
     name = models.CharField(max_length=200)
     mail_address = models.EmailField(db_index=True, unique=True)
+
     # each human can be associated only with one campaign at a given time
     campaign = models.ForeignKey('Campaign', null=True, blank=True)
     user = models.ForeignKey(User, null=True)
@@ -59,7 +60,9 @@ class Character(models.Model):
     campaign = models.ForeignKey(Campaign)
     
     name = models.CharField(max_length=200)
-    mail_address = models.EmailField(db_index=True, unique=True)
+    mail_address = models.EmailField(db_index=True)
+
+    # TODO: mail_address is unique for a given campaign
 
     # TODO: much more to come...
 
@@ -78,11 +81,25 @@ class Fragment(models.Model):
     """
     Part of a message
     """
-    author = models.ForeignKey(Character, related_name='sender', unique=True)
+    author_character = models.ForeignKey(Character, null=True)
+    author_human = models.ForeignKey(Human)
     text = models.TextField()
     when = models.DateTimeField()
 
-    related = models.ManyToManyField('self')
+class FragmentRelation(models.Model):
+    """
+    A relation between two fragments / messages
+    """
+    source = models.ForeignKey(Fragment, related_name='source')
+    target = models.ForeignKey(Fragment, related_name='target')
+    rel_type = models.ForeignKey(FragmentRelType, related_name='type')
+
+class FragmentRelType(models.Model):
+    """
+    A relation type between fragments
+    """
+    name = models.CharField(max_length=50, db_index=True, unique=True)
+    description = models.CharField(max_length=1024, unique=False, null=True, blank=True)
 
 class Queue(models.Model):
     """
@@ -99,24 +116,29 @@ class MessageID(models.Model):
     A message in a MailDir
     """
     # 255 should be enough see http://www.mail-archive.com/synalist-public@lists.sourceforge.net/msg02843.html
-    message_id = models.CharField(max_length=255, db_index=True, unique=True)
-    key = models.CharField(max_length=255, db_index=True, unique=True)
+    message_id = models.CharField(max_length=255, db_index=True)
+    key = models.CharField(max_length=255, db_index=True)
     queue = models.ForeignKey(Queue)
 
     def __unicode__(self):
         return u"<" + self.message_id + u">" + self.queue.__unicode__()
+
+    class Meta:
+        unique_together = ( 'message_id', 'key', 'queue' )
+
 
 class Message(Fragment):
     """
     An actual email between humans in character
     """
     message_id = models.CharField(max_length=255, db_index=True, unique=True)
-    receivers = models.ForeignKey(Character, related_name='receiver')
+    receivers_character = models.ManyToManyField(Character, related_name='receiver')
+    receivers_human = models.ManyToManyField(Human, related_name='receiver')
     parts = models.ManyToManyField(Fragment, related_name='part')
 
     def __unicode__(self):
         return u"<" + self.message_id + u">"
-
+        
 from account.signals import email_confirmed, user_signed_up
 
 def create_human(user, form, **kwargs):
