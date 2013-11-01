@@ -56,9 +56,11 @@ def START(message, host=None):
 
     if gm != human and not gm.is_bouncing:
         # send to the actual GM, if it is not bouncing
-        
+
+        # use an encoded version of the human email
+        # TODO: add a privacy setting that could replace this with 'user-%d' % (user.id,) instead
+        new_from = '@%s' % (human.mail_address.replace('@','%'), server_name,)
         # find their character and use it as From, if any
-        new_from = 'gm@%s' % (server_name,)
         character = find_character(human)
         if character is not None:
             new_from = "%s <%s>" % (character.name, character.mail_address)
