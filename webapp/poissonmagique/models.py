@@ -96,16 +96,15 @@ class FragmentRelation(models.Model):
     """
     A relation between two fragments / messages
     """
+
+    REL_TYPES = (
+        ('FWD', 'Forward'),
+        ('RPL', 'Reply'),
+        ('REL', 'Related'),
+    )
     source = models.ForeignKey(Fragment, related_name='source')
     target = models.ForeignKey(Fragment, related_name='target')
-    rel_type = models.ForeignKey(FragmentRelType, related_name='type')
-
-class FragmentRelType(models.Model):
-    """
-    A relation type between fragments
-    """
-    name = models.CharField(max_length=50, db_index=True, unique=True)
-    description = models.CharField(max_length=1024, unique=False, null=True, blank=True)
+    rel_type = models.CharField(max_length=3, choices=REL_TYPES)
 
 class Queue(models.Model):
     """
@@ -138,8 +137,8 @@ class Message(Fragment):
     An actual email between humans in character
     """
     message_id = models.CharField(max_length=255, db_index=True, unique=True)
-    receivers_character = models.ManyToManyField(Character, related_name='receiver')
-    receivers_human = models.ManyToManyField(Human, related_name='receiver')
+    receivers_character = models.ManyToManyField(Character, related_name='receiver_character')
+    receivers_human = models.ManyToManyField(Human, related_name='receiver_human')
     parts = models.ManyToManyField(Fragment, related_name='part')
     status = bitfield.BitField(flags=(
         ('read','Read'),

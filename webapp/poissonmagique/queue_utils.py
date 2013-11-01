@@ -1,5 +1,6 @@
 from lamson import queue
 from models import MessageID, Queue
+from django.db import IntegrityError, connection
 
 def sanity_check(queue):
     """
@@ -16,10 +17,14 @@ def sanity_check(queue):
     mails_in_db = len(MessageID.objects.filter(queue=db_queue))
     if mails_in_folder != mails_in_db:
         for key in queue.keys():
-            if len(MessageID.objects.filter(key=key)) == 0:
+            if len(MessageID.objects.filter(key=key, queue=db_queue)) == 0:
                 msg = queue.get(key)
-                message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
-                message_id.save()
+                try:
+                    message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
+                    message_id.save()
+                except IntegrityError:
+                    connection._rollback()
+                    # race condition with upload queue, all it's good
     return db_queue
 
 def queue_push(queue, msg, key):
@@ -28,6 +33,11 @@ def queue_push(queue, msg, key):
     Returns the newly saved MessageID ORM instance.
     """
     db_queue = sanity_check(queue)
-    message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
-    message_id.save()
+    try:
+        message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
+        message_id.save()
+    except IntegrityError:
+        connection._rollback()
+        message_id = MessageID.objects.get(key=key, queue=db_queue)
+        
     return message_id

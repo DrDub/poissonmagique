@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, include, url
-from views import msg_list, msg_new, msg_send, msg
+from views import msg_list, msg_new, msg
 
 urlpatterns = \
     patterns('',

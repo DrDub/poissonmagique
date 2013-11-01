@@ -40,7 +40,7 @@ def msg(request, msg_id=None):
     return render_to_response('poissonmagique/msg.html', params, RequestContext(request))
 
 @login_required
-def msg_all(request, filter=False):
+def msg_list(request, filter=False):
     if request.user.is_staff:
         return _msg_all_admin(request)
     

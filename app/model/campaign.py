@@ -5,10 +5,13 @@ import logging
 
 def find_sender(message):
     name, sender = parseaddr(message['from'])
+    return find_human(sender, 'sender')
+
+def find_human(mail_address, name='human'):
     try:
-        human = Human.objects.get(mail_address=sender)
+        human = Human.objects.get(mail_address=mail_address)
     except ObjectDoesNotExist:
-        logging.debug("Unknown sender %s", sender)
+        logging.debug("Unknown %s: %s", name, human)
         return None
     return human
 
