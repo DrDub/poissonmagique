@@ -1,3 +1,4 @@
+from config.settings import server_name
 from webapp.poissonmagique.models import Campaign, Human, Character
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import User
@@ -27,7 +28,7 @@ def find_recipient(mail_address, campaign=None, name='recipient'):
             user = User.objects.get(pk=uid)
         except User.DoesNotExist:
             logging.debug("Unknown %s: UID %d", name, uid)
-            return None
+            return None, None
         try:
             human = Human.objects.get(user=user)
         except Human.DoesNotExist:
@@ -35,16 +36,19 @@ def find_recipient(mail_address, campaign=None, name='recipient'):
             return None
         return human, None
     elif campaign is not None:
-        try:
-            character = Character.objects.get(mail_address=mail_address, campaign=campaign)
-            human = character.controller
-            return human, character
-        except Character.DoesNotExist:
-            logging.debug("Unknown %s for campaign %s: %s", name, campaign.name, mail_address)
-            return None
+        if mail_address == "gm@%s" % (server_name,):
+            return campaign.gm, None
+        else:
+            try:
+                character = Character.objects.get(mail_address=mail_address, campaign=campaign)
+                human = character.controller
+                return human, character
+            except Character.DoesNotExist:
+                logging.debug("Unknown %s for campaign %s: %s", name, campaign.name, mail_address)
+                return None, None
     else:
         logging.debug("Can't resolve %s without a campaign: %s", name, mail_address)
-        return None
+        return None, None
     
 
 def find_campaign_for_sender(human):

@@ -25,7 +25,7 @@ class Human(models.Model):
     campaign = models.ForeignKey('Campaign', null=True, blank=True)
     user = models.ForeignKey(User, null=True)
     is_bouncing = models.BooleanField(default=False)
-
+    
     def __unicode__(self):
         return u"%s <%s> (poisson-%d)" % (self.name, self.mail_address,  self.user.id)
 
@@ -49,6 +49,7 @@ class Campaign(models.Model):
     #players = models.ForeignKey(Human, related_name='player')
     is_active = models.BooleanField(default=True, db_index=True)
     language = models.CharField(max_length=2)
+    game_time = models.CharField(max_length=200, null=True, blank=True, default="100: before start")
 
     # TODO: consistency that the players and gm are all distinct
 
@@ -86,12 +87,12 @@ class Fragment(models.Model):
     """
     Part of a message
     """
-    author_character = models.ForeignKey(Character, null=True)
+    author_character = models.ForeignKey(Character, null=True, blank=True)
     author_human = models.ForeignKey(Human)
     campaign = models.ForeignKey(Campaign)
     text = models.TextField()
     when = models.DateTimeField()
-    game_time = models.CharField(max_length=200, null=True)
+    game_time = models.CharField(max_length=200, null=True, blank=True, default="")
 
 class FragmentRelation(models.Model):
     """
@@ -139,9 +140,9 @@ class Message(Fragment):
     """
     message_id = models.CharField(max_length=255, db_index=True, unique=True)
     subject = models.CharField(max_length=255, blank=True, null=True, default="")
-    receivers_character = models.ManyToManyField(Character, related_name='receiver_character')
+    receivers_character = models.ManyToManyField(Character, related_name='receiver_character', blank=True)
     receivers_human = models.ManyToManyField(Human, related_name='receiver_human')
-    parts = models.ManyToManyField(Fragment, related_name='part')
+    parts = models.ManyToManyField(Fragment, related_name='part', blank=True)
     status = bitfield.BitField(flags=(
         ('read','Read'),
         ('deleted','Deleted'),

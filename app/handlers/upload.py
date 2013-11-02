@@ -12,7 +12,8 @@ from datetime import datetime
 @stateless
 def START(message, address=None, host=None):
     if len(Message.objects.filter(message_id=get_message_id(message))) > 0:
-        return # ignore messages already in the DB
+        logging.debug("Ignoring message already uploaded: %s", get_message_id(message))
+        return 
 
     human = find_sender(message)
 
@@ -59,7 +60,8 @@ def START(message, address=None, host=None):
                       subject = message['Subject'],
                       campaign = campaign,
                       text = text,
-                      when = datetime.now() )
+                      when = datetime.now(),
+                      game_time = campaign.game_time )
     db_msg.save()
     for recipient in message['To'].split(","):
         _, rcpt_address = parseaddr(recipient)
