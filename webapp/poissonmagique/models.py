@@ -27,7 +27,7 @@ class Human(models.Model):
     is_bouncing = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return self.name + u" <" + self.mail_address + u">"
+        return u"%s <%s> (poisson-%d)" % (self.name, self.mail_address,  self.user.id)
 
     def is_gm(self, campaign=None):
         """
@@ -138,6 +138,7 @@ class Message(Fragment):
     An actual email between humans in character
     """
     message_id = models.CharField(max_length=255, db_index=True, unique=True)
+    subject = models.CharField(max_length=255, blank=True, null=True, default="")
     receivers_character = models.ManyToManyField(Character, related_name='receiver_character')
     receivers_human = models.ManyToManyField(Human, related_name='receiver_human')
     parts = models.ManyToManyField(Fragment, related_name='part')
@@ -147,7 +148,7 @@ class Message(Fragment):
         ('private','Private')), default=0)
 
     def __unicode__(self):
-        return u"<" + self.message_id + u">"
+        return u"%s: '%s' <%s>" % (unicode(self.when), self.subject, self.message_id)
         
 from account.signals import email_confirmed, user_signed_up
 

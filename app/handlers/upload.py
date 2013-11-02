@@ -11,14 +11,19 @@ from datetime import datetime
 @route("(address)@(host)", address=".+")
 @stateless
 def START(message, address=None, host=None):
-    if len(Messages.objects.filter(message_id=get_message_id(message))) > 0:
+    if len(Message.objects.filter(message_id=get_message_id(message))) > 0:
         return # ignore messages already in the DB
 
     human = find_sender(message)
 
-    try:
-        campaign = Campaign.objects.get(pk=int(message['X-Poisson-Magique-Campaign']))
-    except Campaign.DoesNotExist:
+    campaign = None
+    campaign_id = message['X-Poisson-Magique-Campaign']
+    if campaign_id is not None:
+        try:
+            campaign = Campaign.objects.get(pk=int(campaign_id))
+        except Campaign.DoesNotExist:
+            campaign = None
+    if campaign is None:
         # re-do the searching for the campaign
         campaign = find_campaign_for_sender(human)
 
@@ -45,10 +50,11 @@ def START(message, address=None, host=None):
         author_character = None
 
     # create base message
-    # TODO: extra the time of the message for the 'when'
+    # TODO: extract the time of the message for the 'when'
     db_msg = Message( message_id = message_id,
                       author_human = human,
                       author_character = author_character,
+                      subject = message['Subject'],
                       campaign = campaign,
                       text = text,
                       when = datetime.now() )
