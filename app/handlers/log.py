@@ -11,5 +11,4 @@ def START(message, to=None, host=None):
     @stateless and routes everything.
     Has @nolocking, but that's alright since it's just writing to a maildir.
     """
-    key = Router.FULL_QUEUE.push(message)
-    queue_push(Router.FULL_QUEUE, message, key)
+    queue_push(Router.FULL_QUEUE, message)

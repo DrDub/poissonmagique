@@ -91,6 +91,7 @@ class Fragment(models.Model):
     campaign = models.ForeignKey(Campaign)
     text = models.TextField()
     when = models.DateTimeField()
+    game_time = models.CharField(max_length=200, null=True)
 
 class FragmentRelation(models.Model):
     """

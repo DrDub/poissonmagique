@@ -27,14 +27,21 @@ def sanity_check(queue):
                     # race condition with upload queue, all it's good
     return db_queue
 
-def queue_push(queue, msg, key):
+def get_message_id(msg):
+    return msg['Message-ID'][1:-1]
+
+def queue_push(queue, msg, key=None):
     """
     Keep track a new message as it is added to a maildir.
     Returns the newly saved MessageID ORM instance.
+    If the key is not provided, the message will be inserted into the MailDir
     """
+    if key is None:
+        key = queue.push(msg)
+        
     db_queue = sanity_check(queue)
     try:
-        message_id = MessageID(message_id = msg['Message-ID'][1:-1], key=key, queue=db_queue)
+        message_id = MessageID(message_id = get_message_id(msg), key=key, queue=db_queue)
         message_id.save()
     except IntegrityError:
         connection._rollback()

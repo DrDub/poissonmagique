@@ -1,10 +1,11 @@
 import logging
+from email.utils import parseaddr
 from config.settings import relay, owner_email, silent, server_name, web_server_name
 from lamson.routing import route, route_like, stateless, Router
 from lamson.bounce import bounce_to
 from lamson.mail import MailResponse
 from lamson import view
-from app.model.campaign import find_sender, find_campaign_for_sender, is_gm, find_human
+from app.model.campaign import find_sender, find_recipient, find_campaign_for_sender, is_gm
 from app.model.character import find_character
 
 
@@ -53,9 +54,8 @@ def START(message, host=None):
     if gm != human and not gm.is_bouncing:
         # send to the actual GM, if it is not bouncing
 
-        # use as From an encoded version of the human email
-        # TODO: add a privacy setting that could replace this with 'user-%d' % (user.id,) instead
-        new_from = '%s@%s' % (human.mail_address.replace('@','%'), server_name,)
+        # use as From the UID
+        new_from = 'poisson-%d@%s' % (human.user.id, server_name,)
         # find their character and use it as From, if any
         character = find_character(human)
         if character is not None:
@@ -95,8 +95,12 @@ def START(message, address=None, host=None):
         Router.UPLOAD_QUEUE.push(message)
 
         from_gm = 'gm@%s' % (server_name,)
-        for recepient in message['To']:
-            target = find_human(recepient)
+        for recipient in message['To'].split(","):
+            _, rcpt_address = parseaddr(recipient)
+            target, _ = find_recipient(rcpt_address, campaign, name='recipient')
+
+            # TODO: check if the GM is allowed to message this human
+            # TODO: move this to the upload queue, there's no way to avoid double-forwarding for multiple to:
 
             if target is not None:
                 new_message = MailResponse(To=target.mail_address, From=from_gm, 

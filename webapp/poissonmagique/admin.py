@@ -7,6 +7,7 @@ from bitfield.admin import BitFieldListFilter
 
 class MessageAdmin(admin.ModelAdmin):
     formfield_overrides = { BitField: {'widget': BitFieldCheckboxSelectMultiple}, }
+    fields = ('author_character', 'author_human', 'campaign', 'text', 'when', 'game_time', 'message_id', 'receivers_character','receivers_human', 'parts' )
     #list_filter = ( ('status', BitFieldListFilter,)  )
 
 admin.site.register(UserState)
