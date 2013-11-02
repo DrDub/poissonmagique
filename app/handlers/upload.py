@@ -48,6 +48,8 @@ def START(message, address=None, host=None):
         author_character = Character.objects.get(controller=human, campaign=campaign)
     except Character.DoesNotExist:
         author_character = None
+    except Character.MultipleObjectsReturned:
+        author_character = None
 
     # create base message
     # TODO: extract the time of the message for the 'when'
