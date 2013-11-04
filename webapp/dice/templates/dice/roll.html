@@ -1,0 +1,18 @@
+{% extends "poissonmagique/user.html" %}
+
+{% block body %}
+
+Roll {{ description }} for {{ what }}.
+
+{% if is_roll %}
+
+<a href={{ url }}>Continue to SecureDice site (click 'Roll the dice')</a>
+
+{% else %}
+
+Share this URL: <a href={% url dice_roll hash %}>{% url dice_roll hash %}</a>
+
+{% endif %}
+
+{% endblock %}
+

@@ -129,7 +129,7 @@ def _check_sender(message):
     human = find_sender(message)
     if human is None:
         # unknown person
-        logging.debug("MESSAGE to gm@%s from %s, unknown sender" % (host, str(message['from'])))
+        logging.debug("MESSAGE to %s from %s, unknown sender" % (str(message['to']), str(message['from'])))
         if silent:
             #TODO log to unknown sender queue
             return None

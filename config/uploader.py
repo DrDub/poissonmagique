@@ -28,4 +28,5 @@ Router.defaults(**settings.router_defaults)
 Router.load(settings.upload_handlers)
 Router.RELOAD=True
 Router.UPLOAD_QUEUE=queue.Queue(settings.UPLOADER_QUEUE_PATH) # mails to add to the DB
+Router.UNDELIVERABLE_QUEUE=queue.Queue("run/error_upload")
 

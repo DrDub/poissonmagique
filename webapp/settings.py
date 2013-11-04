@@ -146,6 +146,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.admindocs',
     'webapp.poissonmagique',
+    'webapp.dice',
     'south',
     'account',
     'pinax_theme_bootstrap_account',
