@@ -4,15 +4,18 @@
 
 Roll {{ description }} for {{ what }}.
 
+<p>
 {% if is_roll %}
 
 <a href={{ url }}>Continue to SecureDice site (click 'Roll the dice')</a>
 
 {% else %}
 
-Share this URL: <a href={% url dice_roll hash %}>{% url dice_roll hash %}</a>
+Share this URL: <a href="{{ url }}">{{ url }}</a>
 
 {% endif %}
+</p>
+
 
 {% endblock %}
 

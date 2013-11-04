@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import login_required
 from django.utils.http import urlencode
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from random import randrange
 from datetime import datetime
@@ -46,7 +47,7 @@ def new_roll(request):
         if form.is_valid():
             data = form.cleaned_data
             # create URL and SecureDice backend
-            query_str = 'dq=%d&ds=%d&dm=%d&ds=%d' % ( data['repeats'],
+            query_str = 'dq=%d&ds=%d&dm=%d&dt=%d' % ( data['repeats'],
                                                       data['sides'],
                                                       data['add'],
                                                       data['set_repeat'] )
@@ -63,7 +64,7 @@ def new_roll(request):
                             description=data['description'],
                             what=data['what'],
                             target=data['who'],
-                            implementation=secure_dice
+                            implementation_key=secure_dice.id
                             )
                 try:
                     roll.save()
@@ -81,23 +82,29 @@ def new_roll(request):
         'form': form,
     })
 
-def roll(request, do_roll=False, hash=None):
-    if hash is None:
+def roll(request, do_roll=False, hashid=None):
+    if hashid is None:
         return HttpResponseRedirect('/')
-    roll = Roll.objects.get(hashid=hash)
-    query_str = roll.implementation.query_str
-    secure_dice_url = 'http://www.rpglibrary.org/software/securedice/?%s&to=%s&cc=%s&sub=%s' % (
-        query_str,
-        urlencode(roll.target.mail_address),
-        urlencode('roll-%d@%s' % ( roll.hashid, server_name_config )),
-        urlencode('%s (%s)' % (roll.description, roll.what[:40])))
+    roll = Roll.objects.get(hashid=hashid)
+    
+    if do_roll:
+        query_str = SecureDice.objects.get(pk=roll.implementation_key).query_str
+        url = 'http://www.rpglibrary.org/software/securedice/?%s&%s' % (
+            query_str,        
+            urlencode( { 'to' : roll.target.mail_address,
+                         'cc' : 'roll-%d@%s' % ( roll.hashid, server_name_config ),
+                         'sub' : '%s (%s)' % (roll.description, roll.what[:40]) }
+                       )
+            )
+    else:
+        url = "http://%s%s" % (settings.SITE_NAME, reverse('dice_roll', kwargs={ 'hashid' : hashid }))
     
     return render(request, 'dice/roll.html', {
         'description' : roll.description,
         'what':roll.what,
-        'url': secure_dice_url,
+        'url': url,
         'is_roll': do_roll,
-        'hashid':hash,
+        'hashid':hashid,
         'SITE_NAME': settings.SITE_NAME,
         'THEME_ACCOUNT_ADMIN_URL': settings.THEME_ACCOUNT_ADMIN_URL,
         })

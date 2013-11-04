@@ -26,7 +26,8 @@ class Roll(models.Model):
     what = models.CharField(max_length=1024, null=True, blank=True, default="") # SAN because you see smth
     # characteristic (future, SAN)
     hashid = models.PositiveIntegerField(unique=True, db_index=True)
-    implementation = models.GenericForeignKey(RollBackend)
+    implementation_type = models.IntegerField(default=1)
+    implementation_key = models.IntegerField()
     outcome = models.ForeignKey('RollOutcome', null=True, blank=True, default=None, related_name='outcome')
     
 
