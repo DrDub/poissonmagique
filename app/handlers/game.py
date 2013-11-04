@@ -7,6 +7,7 @@ from lamson.mail import MailResponse
 from lamson import view
 from app.model.campaign import find_sender, find_recipient, find_campaign_for_sender, is_gm
 from app.model.character import find_character
+from app.model.dice import find_roll, set_roll_outcome
 
 
 @route(".+")
@@ -70,7 +71,39 @@ def START(message, host=None):
         new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % ( server_name,)
 
         relay.deliver(new_message)
-    
+
+# dice entry point
+# TODO: move it to another handler file
+
+@route("roll-(hashid)@(host)", hashid="[0-9]+")
+def START(message, hashid=None, host=None):
+    hashid = int(hashid)
+    roll = find_roll(hashid)
+    if roll is None:
+        logging.info("Unknown roll %d" % (hashid))
+        return
+
+    outcome = message.body()
+    set_roll_outcome(roll, outcome)
+    logging.debug("Roll %d outcome for %s:\n%s" % (hashid, str(roll.target), outcome))
+
+    # notify GM
+    if not roll.campaign.gm.is_bouncing:
+        character = find_character(roll.target, roll.campaign)
+        if character is None:
+            character = str(roll.target)
+        else:
+            character = str(character)
+
+            
+        dice = view.respond(locals(), "dice.msg",
+                               From='gm@%s' % (host,),
+                               To=roll.campaign.gm.mail_address,
+                               Subject=message['subject']
+                               )
+        relay.deliver(dice)
+    return START
+
 # secondary entry point, messaging a character
 @route("(address)@(host)", address=".+")
 def START(message, address=None, host=None):

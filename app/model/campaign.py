@@ -57,3 +57,5 @@ def find_campaign_for_sender(human):
 def is_gm(human, campaign):
     return campaign.gm == human
 
+    
+
