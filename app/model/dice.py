@@ -9,3 +9,6 @@ def find_roll(hashid):
 def set_roll_outcome(roll, text):
     outcome = RollOutcome(roll=roll, outcome_text=text)
     outcome.save()
+    roll.outcome = outcome
+    roll.save()
+

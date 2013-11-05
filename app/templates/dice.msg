@@ -2,7 +2,7 @@
 
 Who? 
 
-{{ character }}
+{{ character }} controlled by {{ roll.target }}
 
 Requested when? 
 

@@ -90,14 +90,19 @@ def START(message, hashid=None, host=None):
     # notify GM
     if not roll.campaign.gm.is_bouncing:
         character = find_character(roll.target, roll.campaign)
+        mail = 'gm@%s' % (host,)
+        
         if character is None:
+            mail = 'poisson-%d@%s' % (human.user.id, server_name,)
             character = str(roll.target)
         else:
+            mail = character.mail_address
             character = str(character)
+            
 
             
         dice = view.respond(locals(), "dice.msg",
-                               From='gm@%s' % (host,),
+                               From=mail,
                                To=roll.campaign.gm.mail_address,
                                Subject=message['subject']
                                )
