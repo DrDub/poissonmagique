@@ -25,13 +25,13 @@ def IGNORE_BOUNCE(message):
 @route("gm@(host)")
 @bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, host=None):
-    logging.info("MESSAGE to gm@%s:\n%s" % (host, str(message)))
+    logging.info(u"MESSAGE to gm@%s:\n%s" % (host, unicode(message)))
     # check the sender
     human = _check_sender(message)
     if human is None:
         return
 
-    logging.debug("MESSAGE to gm@%s from %s, sender %d" % (host, str(message['from']), human.id))
+    logging.debug(u"MESSAGE to gm@%s from %s, sender %d" % (host, unicode(message['from']), human.id))
 
     # check the campaign
     campaign = find_campaign_for_sender(human)
@@ -39,16 +39,16 @@ def START(message, host=None):
         # let this person know is game over
         return NO_GAME(message)
 
-    logging.debug("MESSAGE to gm@%s from %s, campaign %s" % (host, str(message['from']), campaign.name))
+    logging.debug(u"MESSAGE to gm@%s from %s, campaign %s" % (host, unicode(message['from']), campaign.name))
 
     # enque for uploading
-    message['X-Poisson-Magique-Campaign'] = str(campaign.id)
-    message['X-Must-Forward'] = str(False) # change to True to enable forwarding on uploader queue
+    message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
+    message['X-Must-Forward'] = unicode(False) # change to True to enable forwarding on uploader queue
 
     gm = campaign.gm
     if gm == human:
-        message['X-Must-Forward'] = str(False) # we shouldn't forward, for sure
-        logging.debug("MESSAGE to gm@%s from %s, campaign %s is from GM" % (host, str(message['from']), campaign.name))
+        message['X-Must-Forward'] = unicode(False) # we shouldn't forward, for sure
+        logging.debug(u"MESSAGE to gm@%s from %s, campaign %s is from GM" % (host, unicode(message['from']), campaign.name))
 
     Router.UPLOAD_QUEUE.push(message)
 
@@ -85,7 +85,7 @@ def START(message, hashid=None, host=None):
 
     outcome = message.body()
     set_roll_outcome(roll, outcome)
-    logging.debug("Roll %d outcome for %s:\n%s" % (hashid, str(roll.target), outcome))
+    logging.debug(u"Roll %d outcome for %s:\n%s" % (hashid, unicode(roll.target), outcome))
 
     # notify GM
     if not roll.campaign.gm.is_bouncing:
@@ -93,14 +93,13 @@ def START(message, hashid=None, host=None):
         mail = 'gm@%s' % (host,)
         
         if character is None:
-            mail = 'poisson-%d@%s' % (human.user.id, server_name,)
-            character = str(roll.target)
+            mail = 'poisson-%d@%s' % (roll.target.user.id, server_name,)
+            character = unicode(roll.target)
         else:
             mail = character.mail_address
-            character = str(character)
+            character = unicode(character)
             
-
-            
+        outcome = unicode(outcome).encode('ascii','ignore')
         dice = view.respond(locals(), "dice.msg",
                                From=mail,
                                To=roll.campaign.gm.mail_address,
@@ -126,10 +125,10 @@ def START(message, address=None, host=None):
     gm = campaign.gm
 
     if human == gm:
-        logging.info("MESSAGE from gm to %s@%s:\n%s" % (address, host, str(message)))
+        logging.info(u"MESSAGE from gm to %s@%s:\n%s" % (address, host, unicode(message)))
         # enque for uploading
-        message['X-Poisson-Magique-Campaign'] = str(campaign.id)
-        message['X-Must-Forward'] = str(False) # change to True to enable forwarding on uploader queue
+        message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
+        message['X-Must-Forward'] = unicode(False) # change to True to enable forwarding on uploader queue
         Router.UPLOAD_QUEUE.push(message)
 
         from_gm = 'gm@%s' % (server_name,)
@@ -150,7 +149,7 @@ def START(message, address=None, host=None):
                 relay.deliver(new_message)
     else: # TODO: PC-to-PC
         # create the entry as a pending message and die off
-        logging.debug("MESSAGE to %s@%s MISSING:\n%s" % (address, host, str(message)))
+        logging.debug(u"MESSAGE to %s@%s MISSING:\n%s" % (address, host, unicode(message)))
 
 @route_like(START)
 @bounce_to(soft=IGNORE_BOUNCE, hard=IGNORE_BOUNCE)
@@ -159,7 +158,7 @@ def NO_GAME(message, host=None):
                            From=owner_email,
                            To=message['from'],
                            Subject="You're not playing a game in this server.")
-    logging.debug("MESSAGE to gm@%s from %s, unknown campaign" % (host, str(message['from'])))
+    logging.debug(u"MESSAGE to gm@%s from %s, unknown campaign" % (host, unicode(message['from'])))
     relay.deliver(no_game)
     return START # reset
 
@@ -167,7 +166,7 @@ def _check_sender(message):
     human = find_sender(message)
     if human is None:
         # unknown person
-        logging.debug("MESSAGE to %s from %s, unknown sender" % (str(message['to']), str(message['from'])))
+        logging.debug(u"MESSAGE to %s from %s, unknown sender" % (unicode(message['to']), unicode(message['from'])))
         if silent:
             #TODO log to unknown sender queue
             return None
