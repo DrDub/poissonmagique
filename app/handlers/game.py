@@ -10,8 +10,6 @@ from app.model.character import find_character
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode
 
-# TODO: move to a library
-
 @route(".+")
 def GM_BOUNCE(message):
     # mark GM as bouncing
@@ -45,7 +43,7 @@ def START(message, host=None):
 
     # enque for uploading
     message['X-Poisson-Magique-Campaign'] =  safe_unicode(campaign.id)
-    message['X-Must-Forward'] = safe_unicode(False) # change to True to enable forwarding on uploader queue
+    message['X-Must-Forward'] = safe_unicode(True)
 
     gm = campaign.gm
     if gm == human:
@@ -54,7 +52,7 @@ def START(message, host=None):
 
     Router.UPLOAD_QUEUE.push(message)
 
-    if gm != human and not gm.is_bouncing:
+    if False: # (now handled at uploader) gm != human and not gm.is_bouncing:
         # send to the actual GM, if it is not bouncing
 
         # use as From the UID
@@ -74,48 +72,12 @@ def START(message, host=None):
 
         relay.deliver(new_message)
 
-# dice entry point
-# TODO: move it to another handler file
-
-@route("roll-(hashid)@(host)", hashid="[0-9]+")
-def START(message, hashid=None, host=None):
-    hashid = int(hashid)
-    roll = find_roll(hashid)
-    if roll is None:
-        logging.info("Unknown roll %d" % (hashid))
-        return
-
-    outcome = message.body()
-    set_roll_outcome(roll, outcome)
-    logging.debug(u"Roll %d outcome for %s:\n%s" % (hashid, unicode(roll.target), outcome))
-
-    # notify GM
-    if not roll.campaign.gm.is_bouncing:
-        character = find_character(roll.target, roll.campaign)
-        mail = 'gm@%s' % (host,)
-        
-        if character is None:
-            mail = 'poisson-%d@%s' % (roll.target.user.id, server_name,)
-            character = safe_unicode(roll.target)
-        else:
-            mail = character.mail_address
-            character = safe_unicode(character)
-            
-        outcome = safe_unicode(outcome)
-        dice = view.respond(locals(), "dice.msg",
-                               From=mail,
-                               To=roll.campaign.gm.mail_address,
-                               Subject=message['subject']
-                               )
-        relay.deliver(dice)
-    return START
-
 # secondary entry point, messaging a character
-@route("(address)@(host)", address=".+")
+@route("(address)@(host)", address="(([^r][^o][^l][^l][^-])|(...)|(....)).*")
 def START(message, address=None, host=None):
-    # TODO determine which adventure this player is or just log it
     human = _check_sender(message)
     if human is None:
+        # TODO determine which adventure this player is or just log it
         return
 
     # check the campaign
@@ -130,28 +92,33 @@ def START(message, address=None, host=None):
         logging.info(u"MESSAGE from gm to %s@%s:\n%s" % (address, host, safe_unicode(str(message))))
         # enque for uploading
         message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
-        message['X-Must-Forward'] = unicode(False) # change to True to enable forwarding on uploader queue
+        message['X-Must-Forward'] = unicode(True)
         Router.UPLOAD_QUEUE.push(message)
 
-        from_gm = 'gm@%s' % (server_name,)
-        for recipient in message['To'].split(","):
-            _, rcpt_address = parseaddr(recipient)
-            target, _ = find_recipient(rcpt_address, campaign, name='recipient')
+        if False: # now handled at uploader
+            from_gm = 'gm@%s' % (server_name,)
+            for recipient in message['To'].split(","):
+                _, rcpt_address = parseaddr(recipient)
+                target, _ = find_recipient(rcpt_address, campaign, name='recipient')
 
-            # TODO: check if the GM is allowed to message this human
-            # TODO: move this to the upload queue, there's no way to avoid double-forwarding for multiple to:
+                # TODO: check if the GM is allowed to message this human
+                # TODO: move this to the upload queue, there's no way to avoid double-forwarding for multiple to:
 
-            if target is not None:
-                new_message = MailResponse(To=target.mail_address, From=from_gm, 
-                                           Subject=message['Subject'],
-                                           Body=message.body())
-                new_message.attach_all_parts(message)
-                new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % ( server_name,)
+                if target is not None:
+                    new_message = MailResponse(To=target.mail_address, From=from_gm, 
+                                               Subject=message['Subject'],
+                                               Body=message.body())
+                    new_message.attach_all_parts(message)
+                    new_message['X-Poisson-Magique'] = 'This is fictious email for a game, see http://%s for details.' % ( server_name,)
 
-                relay.deliver(new_message)
-    else: # TODO: PC-to-PC
-        # create the entry as a pending message and die off
-        logging.debug(u"MESSAGE to %s@%s MISSING:\n%s" % (address, host, safe_unicode(str(message))))
+                    relay.deliver(new_message)
+    else: # PC-to-PC
+        # enque for uploading
+        logging.info(u"MESSAGE to %s@%s:\n%s" % (address, host, safe_unicode(str(message))))
+
+        message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
+        message['X-Must-Forward'] = unicode(True)
+        Router.UPLOAD_QUEUE.push(message)
 
 @route_like(START)
 @bounce_to(soft=IGNORE_BOUNCE, hard=IGNORE_BOUNCE)

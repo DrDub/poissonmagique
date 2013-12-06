@@ -12,6 +12,10 @@ logging.config.fileConfig("config/logging.conf")
 settings.receiver = QueueReceiver(settings.UPLOADER_QUEUE_PATH,
                                   settings.uploader_queue_sleep)
 
+# the relay host to actually send the final message to
+settings.relay = Relay(host=settings.relay_config['host'], 
+                       port=settings.relay_config['port'], debug=1)
+
 # when silent, it won't reply to emails it doesn't know
 settings.silent = settings.is_silent_config
 
