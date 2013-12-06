@@ -32,6 +32,8 @@ def START(message, address=None, host=None):
 
     # TODO: do something better here
     text = message.body()
+    if text is None:
+        text = "poissonmagique: no text extracted"
 
     # TODO: handle file attachments
 

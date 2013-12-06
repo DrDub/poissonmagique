@@ -8,7 +8,9 @@ from lamson import view
 from app.model.campaign import find_sender, find_recipient, find_campaign_for_sender, is_gm
 from app.model.character import find_character
 from app.model.dice import find_roll, set_roll_outcome
+from utils.unicode_helper import safe_unicode
 
+# TODO: move to a library
 
 @route(".+")
 def GM_BOUNCE(message):
@@ -25,13 +27,13 @@ def IGNORE_BOUNCE(message):
 @route("gm@(host)")
 @bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, host=None):
-    logging.info(u"MESSAGE to gm@%s:\n%s" % (host, unicode(message)))
+    logging.info(u"MESSAGE to gm@%s:\n%s" % (host, safe_unicode(str(message))))
     # check the sender
     human = _check_sender(message)
     if human is None:
         return
 
-    logging.debug(u"MESSAGE to gm@%s from %s, sender %d" % (host, unicode(message['from']), human.id))
+    logging.debug(u"MESSAGE to gm@%s from %s, sender %d" % (host, safe_unicode(message['from']), human.id))
 
     # check the campaign
     campaign = find_campaign_for_sender(human)
@@ -39,16 +41,16 @@ def START(message, host=None):
         # let this person know is game over
         return NO_GAME(message)
 
-    logging.debug(u"MESSAGE to gm@%s from %s, campaign %s" % (host, unicode(message['from']), campaign.name))
+    logging.debug(u"MESSAGE to gm@%s from %s, campaign %s" % (host, safe_unicode(message['from']), campaign.name))
 
     # enque for uploading
-    message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
-    message['X-Must-Forward'] = unicode(False) # change to True to enable forwarding on uploader queue
+    message['X-Poisson-Magique-Campaign'] =  safe_unicode(campaign.id)
+    message['X-Must-Forward'] = safe_unicode(False) # change to True to enable forwarding on uploader queue
 
     gm = campaign.gm
     if gm == human:
-        message['X-Must-Forward'] = unicode(False) # we shouldn't forward, for sure
-        logging.debug(u"MESSAGE to gm@%s from %s, campaign %s is from GM" % (host, unicode(message['from']), campaign.name))
+        message['X-Must-Forward'] = safe_unicode(False) # we shouldn't forward, for sure
+        logging.debug(u"MESSAGE to gm@%s from %s, campaign %s is from GM" % (host, safe_unicode(message['from']), campaign.name))
 
     Router.UPLOAD_QUEUE.push(message)
 
@@ -94,12 +96,12 @@ def START(message, hashid=None, host=None):
         
         if character is None:
             mail = 'poisson-%d@%s' % (roll.target.user.id, server_name,)
-            character = unicode(roll.target)
+            character = safe_unicode(roll.target)
         else:
             mail = character.mail_address
-            character = unicode(character)
+            character = safe_unicode(character)
             
-        outcome = unicode(outcome).encode('ascii','ignore')
+        outcome = safe_unicode(outcome)
         dice = view.respond(locals(), "dice.msg",
                                From=mail,
                                To=roll.campaign.gm.mail_address,
@@ -125,7 +127,7 @@ def START(message, address=None, host=None):
     gm = campaign.gm
 
     if human == gm:
-        logging.info(u"MESSAGE from gm to %s@%s:\n%s" % (address, host, unicode(message)))
+        logging.info(u"MESSAGE from gm to %s@%s:\n%s" % (address, host, safe_unicode(str(message))))
         # enque for uploading
         message['X-Poisson-Magique-Campaign'] = unicode(campaign.id)
         message['X-Must-Forward'] = unicode(False) # change to True to enable forwarding on uploader queue
@@ -149,7 +151,7 @@ def START(message, address=None, host=None):
                 relay.deliver(new_message)
     else: # TODO: PC-to-PC
         # create the entry as a pending message and die off
-        logging.debug(u"MESSAGE to %s@%s MISSING:\n%s" % (address, host, unicode(message)))
+        logging.debug(u"MESSAGE to %s@%s MISSING:\n%s" % (address, host, safe_unicode(str(message))))
 
 @route_like(START)
 @bounce_to(soft=IGNORE_BOUNCE, hard=IGNORE_BOUNCE)
@@ -158,7 +160,7 @@ def NO_GAME(message, host=None):
                            From=owner_email,
                            To=message['from'],
                            Subject="You're not playing a game in this server.")
-    logging.debug(u"MESSAGE to gm@%s from %s, unknown campaign" % (host, unicode(message['from'])))
+    logging.debug(u"MESSAGE to gm@%s from %s, unknown campaign" % (host, safe_unicode(message['from'])))
     relay.deliver(no_game)
     return START # reset
 
@@ -166,7 +168,7 @@ def _check_sender(message):
     human = find_sender(message)
     if human is None:
         # unknown person
-        logging.debug(u"MESSAGE to %s from %s, unknown sender" % (unicode(message['to']), unicode(message['from'])))
+        logging.debug(u"MESSAGE to %s from %s, unknown sender" % (safe_unicode(message['to']), safe_unicode(message['from'])))
         if silent:
             #TODO log to unknown sender queue
             return None
