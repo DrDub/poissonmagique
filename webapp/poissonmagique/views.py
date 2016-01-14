@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response, redirect
 from django.template import RequestContext
-from poissonmagique.models import Human
+from webapp.poissonmagique.models import Human
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from lamson.routing import Router

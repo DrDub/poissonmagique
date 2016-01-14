@@ -126,6 +126,7 @@ TEMPLATE_CONTEXT_PROCESSORS = [
     "django.core.context_processors.request",
     'django.contrib.auth.context_processors.auth',
     "account.context_processors.account",
+    'pinax_theme_bootstrap.context_processors.theme',
 ]
 
 TEMPLATE_DIRS = (
@@ -147,9 +148,10 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
     'webapp.poissonmagique',
     'webapp.dice',
-    'south',
+    #'south',
     'account',
-    'pinax_theme_bootstrap_account',
+#    'bootstrapform',
+    'pinax_theme_bootstrap',
     'django_forms_bootstrap',
 )
 
