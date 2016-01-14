@@ -1,7 +1,7 @@
 import logging
 from config.settings import relay, server_name, web_server_name
-from lamson.routing import route
-from lamson import view
+from salmon.routing import route
+from salmon import view
 from app.model.character import find_character
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode

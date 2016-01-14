@@ -3,8 +3,8 @@ from django.template import RequestContext
 from webapp.poissonmagique.models import Human
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from lamson.routing import Router
-from lamson import queue
+from salmon.routing import Router
+from salmon import queue
 from queue_utils import sanity_check
 from models import MessageID, Campaign
 

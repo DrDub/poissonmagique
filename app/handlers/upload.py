@@ -1,13 +1,13 @@
-from lamson import queue
+from salmon import queue
 from config.settings import relay, owner_email, silent, server_name, web_server_name
-from lamson.routing import route, stateless
+from salmon.routing import route, stateless
 from webapp.poissonmagique.models import Campaign, Human, Character, Fragment, MessageID, Message
 from webapp.poissonmagique.queue_utils import queue_push, get_message_id
 from app.model.campaign import find_sender, find_campaign_for_sender, is_gm, find_recipient
 import logging
 from email.utils import parseaddr
 from datetime import datetime
-from lamson.mail import MailResponse
+from salmon.mail import MailResponse
 
 
 @route("(address)@(host)", address=".+")

@@ -1,10 +1,10 @@
 import logging
 from email.utils import parseaddr
 from config.settings import relay, owner_email, silent, server_name, web_server_name
-from lamson.routing import route, route_like, stateless, Router
-from lamson.bounce import bounce_to
-from lamson.mail import MailResponse
-from lamson import view
+from salmon.routing import route, route_like, stateless, Router
+from salmon.bounce import bounce_to
+from salmon.mail import MailResponse
+from salmon import view
 from app.model.campaign import find_sender, find_recipient, find_campaign_for_sender, is_gm
 from app.model.character import find_character
 from app.model.dice import find_roll, set_roll_outcome

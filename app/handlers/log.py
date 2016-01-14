@@ -1,5 +1,5 @@
-from lamson.routing import route, stateless, nolocking, Router
-from lamson import queue
+from salmon.routing import route, stateless, nolocking, Router
+from salmon import queue
 import game
 from webapp.poissonmagique.queue_utils import queue_push
 

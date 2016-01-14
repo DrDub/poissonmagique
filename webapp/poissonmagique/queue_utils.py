@@ -1,4 +1,4 @@
-from lamson import queue
+from salmon import queue
 from models import MessageID, Queue
 from django.db import IntegrityError, connection
 

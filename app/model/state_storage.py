@@ -1,4 +1,4 @@
-from lamson.routing import StateStorage, ROUTE_FIRST_STATE
+from salmon.routing import StateStorage, ROUTE_FIRST_STATE
 from webapp.poissonmagique.models import UserState
 
 class UserStateStorage(StateStorage):

@@ -105,11 +105,11 @@ MIDDLEWARE_CLASSES = (
     "account.middleware.TimezoneMiddleware",
 )
 
-from config import settings as lamson_settings
-THEME_ACCOUNT_CONTACT_EMAIL=lamson_settings.owner_email_config
-DEFAULT_FROM_EMAIL=lamson_settings.owner_email_config
-EMAIL_HOST=lamson_settings.relay_name_config
-SITE_NAME = lamson_settings.web_server_name_config
+from config import settings as salmon_settings
+THEME_ACCOUNT_CONTACT_EMAIL=salmon_settings.owner_email_config
+DEFAULT_FROM_EMAIL=salmon_settings.owner_email_config
+EMAIL_HOST=salmon_settings.relay_name_config
+SITE_NAME = salmon_settings.web_server_name_config
 THEME_ACCOUNT_ADMIN_URL = 'admin:index'
 
 LOGIN_URL='/account/login'
@@ -191,5 +191,5 @@ try:
 except ImportError:
     pass
 
-from lamson import queue
+from salmon import queue
 QUEUE_FULL_LOG=queue.Queue("%s/full" % (QUEUES_FOLDER,) )
