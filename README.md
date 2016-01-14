@@ -20,11 +20,12 @@ The default listening port for the SMTP server is 1220 as specified in
 config/settings.py. This is the port you will need to configure in
 hubbed_hosts for exim4 (see below).
 
-
+```bash
 $ PYTHONPATH=$PWD python webapp/manage.py syncdb
 $ salmon start
 $ salmon start --boot config.uploader --pid run/uploader.pid 
 $ PYTHONPATH=$PWD python webapp/manage.py runserver
+```
 
 (you'll need to log into the django admin and change the Site from the default example.com)
 
@@ -52,22 +53,28 @@ that install the bridge-utils package and set a local IP in
 
 Add to /etc/rc.local
 
+```bash
   brctl addbr brPM
   ifup brPM
+```
 
 Add to /etc/networking/interfaces
 
+```bash
   auto brPM
   iface brPM inet static
     address 10.10.0.50
     netmask 255.255.255.240
+```
 
 (Then issue the two rc.local commands.)
 
 In poissonmagique/config/localsettings.py you will be setting
 
+```python
 server_name_config = 'your PM_DNS'
 relay_name_config = 'localhost'
+```
 
 but your PM_DNS has to resolve locally to the bridge interface
 (10.10.0.50). So add that line to /etc/hosts:
