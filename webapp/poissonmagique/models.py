@@ -4,7 +4,7 @@ import bitfield
 
 class UserState(models.Model):
     """
-    State for Lamson serialization
+    State for Salmon serialization
     """
     created_on = models.DateTimeField(auto_now_add=True)
     state_key = models.CharField(max_length=512)
@@ -150,7 +150,7 @@ class Message(Fragment):
 
     def __unicode__(self):
         return u"%s: '%s' <%s>" % (unicode(self.when), self.subject, self.message_id)
-        
+
 from account.signals import email_confirmed, user_signed_up
 
 def create_human(user, form, **kwargs):
