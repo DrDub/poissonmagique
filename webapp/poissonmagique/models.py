@@ -14,6 +14,9 @@ class UserState(models.Model):
     def __unicode__(self):
         return "%s:%s (%s)" % (self.state_key, self.from_address, self.state)
 
+    class Meta:
+        db_table = "webapp_poissonmagique_userstate"    
+
 class Human(models.Model):
     """
     A person behind an email account. Users can have several humans associated with them.
@@ -39,6 +42,9 @@ class Human(models.Model):
             return False
         return campaign.gm == self
 
+    class Meta:
+        db_table = "webapp_poissonmagique_human"    
+
 class Campaign(models.Model):
     name = models.CharField(max_length=200, db_index=True)
     url = models.URLField(null=True, blank=True)
@@ -61,6 +67,11 @@ class Campaign(models.Model):
         else:
             return u"-" + self.name + u"-"
 
+    class Meta:
+        db_table = "webapp_poissonmagique_campaign"
+                
+
+        
 class Character(models.Model):
     controller = models.ForeignKey(Human)
     campaign = models.ForeignKey(Campaign)
@@ -82,6 +93,9 @@ class Character(models.Model):
         else:
             return u"-" + base + u"-"
 
+    class Meta:
+        db_table = "webapp_poissonmagique_character"
+                
 
 class Fragment(models.Model):
     """
@@ -94,6 +108,10 @@ class Fragment(models.Model):
     when = models.DateTimeField()
     game_time = models.CharField(max_length=200, null=True, blank=True, default="")
 
+    class Meta:
+        db_table = "webapp_poissonmagique_fragment"
+        
+                
 class FragmentRelation(models.Model):
     """
     A relation between two fragments / messages
@@ -108,6 +126,9 @@ class FragmentRelation(models.Model):
     target = models.ForeignKey(Fragment, related_name='target')
     rel_type = models.CharField(max_length=3, choices=REL_TYPES)
 
+    class Meta:
+        db_table = "webapp_poissonmagique_fragmentrelation"
+                
 class Queue(models.Model):
     """
     A MailDir
@@ -118,6 +139,9 @@ class Queue(models.Model):
     def __unicode__(self):
         return u"Q@" + self.name
 
+    class Meta:
+        db_table = "webapp_poissonmagique_queue"
+                
 class MessageID(models.Model):
     """
     A message in a MailDir
@@ -132,6 +156,8 @@ class MessageID(models.Model):
 
     class Meta:
         unique_together = ( 'message_id', 'key', 'queue' )
+        db_table = "webapp_poissonmagique_messageid"
+                
 
 
 class Message(Fragment):
@@ -150,6 +176,10 @@ class Message(Fragment):
 
     def __unicode__(self):
         return u"%s: '%s' <%s>" % (unicode(self.when), self.subject, self.message_id)
+
+    class Meta:
+        db_table = "webapp_poissonmagique_message"
+                
 
 from account.signals import email_confirmed, user_signed_up
 

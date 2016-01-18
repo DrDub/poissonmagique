@@ -153,6 +153,7 @@ INSTALLED_APPS = (
 #    'bootstrapform',
     'pinax_theme_bootstrap',
     'django_forms_bootstrap',
+    'django_extensions',
 )
 
 # A sample logging configuration. The only tangible logging
