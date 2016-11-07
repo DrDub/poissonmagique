@@ -1,6 +1,6 @@
 from config.settings import server_name
 from email.utils import parseaddr, formataddr
-import app.models.table as t
+import table as t
 
 # data model:
 

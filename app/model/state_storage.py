@@ -13,7 +13,7 @@ class UserStateStorage(StateStorage):
             return ROUTE_FIRST_STATE
 
     def key(self, key, sender):
-        return "salmon-state-%s-%s"
+        return "salmon-state-%s-%s" % (key, sender)
 
     def set(self, key, sender, to_state):
         state_key = self.key(key, sender)

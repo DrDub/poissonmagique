@@ -11,6 +11,7 @@ def start_table():
                               port=redis_port,
                               db=redis_db)
     assert r.time()
+    return r
 
 def _key(key):
     return "pm-" + key
@@ -40,7 +41,7 @@ def create_object(key, **values):
         r.hset(_key(key), k, values[k])
 
 def get_object(key):
-    k = _key(key))
+    k = _key(key)
     keys = r.hkeys(k)
     result = {}
     for hk in keys:

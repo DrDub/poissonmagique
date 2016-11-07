@@ -1,3 +1,3 @@
-salmon-mail==2.99.99
+salmon-mail==2
 redis==2.10.1
 

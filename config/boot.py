@@ -27,9 +27,10 @@ settings.owner_email = settings.owner_email_config
 settings.server_name = settings.server_name_config
 
 # start backend
-table.start_table()
+table.r = table.start_table()
 
 Router.defaults(**settings.router_defaults)
+Router.LOG_EXCEPTIONS = True
 Router.load(settings.handlers)
 Router.RELOAD=True
 Router.UNDELIVERABLE_QUEUE=queue.Queue("run/undeliverable")

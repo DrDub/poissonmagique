@@ -1,4 +1,4 @@
-{% extends "service_base.msg" %}
+{% extends "en/service_base.msg" %}
 {% block service_content %}
 Your new game '{{ campaign_name }}' has been created.
 

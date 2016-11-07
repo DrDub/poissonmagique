@@ -1,4 +1,4 @@
-{% extends "service_base.msg" %}
+{% extends "en/service_base.msg" %}
 {% block service_content %}
 You are now playing the game '{{ campaign_name }}' at {{ server_name }}.
 

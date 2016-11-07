@@ -1,4 +1,4 @@
-{% extends "service_base.msg" %}
+{% extends "en/service_base.msg" %}
 {% block service_content %}
 The player character {{ full_name }} with short form {{ short_form }}
 has been created and it is ready to enroll.

@@ -1,6 +1,6 @@
 import logging
 from email.utils import parseaddr, formataddr
-from config.settings import relay, owner_email, silent, server_name, web_server_name
+from config.settings import relay, owner_email, silent, server_name_config
 from salmon.routing import route, route_like, stateless, Router
 from salmon.bounce import bounce_to
 from salmon.mail import MailResponse
@@ -10,11 +10,9 @@ from app.model.emails import tst_email_processed
 from app.model.campaign import set_bouncing, place_sender, \
      INTERNAL, UNKNOWN, campaign_name, campaign_language, \
      character_exists, new_npc, new_pc, find_enrollment, \
-     get_character
-from app.model.character import find_character
+     get_character, new_campaign, get_attribution
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode
-
 
 @route(".+")
 def GM_BOUNCE(message):
@@ -24,13 +22,15 @@ def GM_BOUNCE(message):
 def IGNORE_BOUNCE(message):
     return START
 
-@route("pm-new-campaign@(host)")
-def NEW_CAMPAIGN(message):
-    return _new_campaign(message, lang='es', 'pm-new-campaign')
+@route("pm-new-game@(host)")
+@stateless
+def NEW_CAMPAIGN(message, host=None):
+    return _new_campaign(message, 'en', 'pm-new-game')
 
-@route("pm-new-campaign-es@(host)")
-def NEW_CAMPAIGN(message):
-    return _new_campaign(message, lang='en', 'pm-new-campaign')
+@route("pm-new-game-es@(host)")
+@stateless
+def NEW_CAMPAIGN_ES(message, host=None):
+    return _new_campaign(message, 'es', 'pm-new-game-es')
     
 def _new_campaign(message, lang, service_address):
     
@@ -43,11 +43,14 @@ def _new_campaign(message, lang, service_address):
         if type(sender) is tuple:
             msg = msg + " " + campaign_name(sender[0])
         if silent:
+            logging.debug(u"MESSAGE to %s@%s from %s - already playing" %
+                      (service_address, server_name, message['from']))
             return
         raise SMTPError(550, msg)
     
     # use subject for name of campaign
     campaign_name = message['subject']
+    server_name = server_name_config
     
     # create campaign, set language to lang
     cid = new_campaign(campaign_name, message['from'], lang)
@@ -57,7 +60,8 @@ def _new_campaign(message, lang, service_address):
     msg = view.respond(locals(), "%s/new_campaign.msg" % (lang,),
                            From="%s@%s" % (service_address, server_name),
                            To=message['from'],
-                           Subject=view.render(locals(), "%s/new_campaign.subj"))
+                           Subject=view.render(locals(),
+                                               "%s/new_campaign.subj"  % (lang,)))
 
     logging.debug(u"MESSAGE to %s@%s from %s, new campaign %s - %s" %
                       (service_address, server_name,
@@ -67,7 +71,7 @@ def _new_campaign(message, lang, service_address):
     return START
                        
 @route("pm-register-(pc_or_npc)pc@(host)", pc_or_npc="n?")
-def NEW_CHARACTER(message, pc_or_npc):
+def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
     # check the sender is an active GM, otherwise raise 550
     sender = place_sender(message)
     if sender == INTERNAL:
@@ -82,7 +86,7 @@ def NEW_CHARACTER(message, pc_or_npc):
             return
         raise SMTPError(550, "Not a GM")
     cid = sender[0]
-    lang = campaign_language(cid):
+    lang = campaign_language(cid)
     campaign_name = campaign_name(cid)
     attribution = get_attribution(message['from'])
     service_address = 'pm-register-' + ("n" if pc_or_npc else "") + "-pc"
@@ -106,7 +110,7 @@ def NEW_CHARACTER(message, pc_or_npc):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/repeated_short_form.subj"))
+                                                    "%s/repeated_short_form.subj"  % (lang,)))
 
         logging.debug(u"DUPLICATE short form %s, campaign %s" %
                         (short_form, str(cid)))
@@ -124,7 +128,7 @@ def NEW_CHARACTER(message, pc_or_npc):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/new_npc.subj"))
+                                                    "%s/new_npc.subj" % (lang,)))
 
         logging.debug(u"NEW_NPC short form %s, campaign %s" %
                         (short_form, str(cid)))
@@ -140,7 +144,7 @@ def NEW_CHARACTER(message, pc_or_npc):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/new_pc.subj"))
+                                                    "%s/new_pc.subj" % (lang,)))
 
         logging.debug(u"NEW_PC short form %s, enroll at %s, campaign %s" %
                         (short_form, enrollment_address, str(cid)))
@@ -148,7 +152,7 @@ def NEW_CHARACTER(message, pc_or_npc):
         return START
 
 @route("pm-enroll-(nonce)@(host)")
-def ENROLL(message, nonce):
+def ENROLL(message, nonce, host=None):
     # check if the email address is know, if it is, croak
     sender = place_sender(message)
     if sender == INTERNAL:
@@ -172,7 +176,7 @@ def ENROLL(message, nonce):
 
     do_enrollment(cid, nonce, message['from'], short_form)
 
-    lang = campaign_language(cid):
+    lang = campaign_language(cid)
     campaign_name = campaign_name(cid)
     attribution = get_attribution(message['from'])
     service_address = 'pm-enroll-%s' % (nonce,)
@@ -181,7 +185,7 @@ def ENROLL(message, nonce):
                            From="%s@%s" % (service_address, server_name),
                            To=message['from'],
                            Subject=view.render(locals(),
-                                                   "%s/enrolled_pc.subj"))
+                                                   "%s/enrolled_pc.subj" % (lang,)))
 
     logging.debug(u"ENROLLED short form %s, enrolled at %s, campaign %s" %
                       (short_form, enrollment_address, str(cid)))
@@ -192,13 +196,13 @@ def ENROLL(message, nonce):
                            From="%s@%s" % (service_address, server_name),
                            To=gm_full,
                            Subject=view.render(locals(),
-                                                   "%s/enrolled_gm.subj"))
+                                                   "%s/enrolled_gm.subj" % (lang,)))
     relay.deliver(msg)
     
     return START
     
 @route("pm-end@(host)")
-def GAME_END(message, nonce):
+def GAME_END(message, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
         return # ignore    
@@ -208,11 +212,13 @@ def GAME_END(message, nonce):
         raise SMTPError(550, "Unknown sender")
     if sender[1]:
         # TODO GM, pack and go
+        sender = sender
     else:
         # TODO PC, drop to NPC and inform the GM
+        sender = sender
 
 @route("pm-roll@(host)")
-def ROLL(message, nonce):
+def ROLL(message, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
         return # ignore    
@@ -234,8 +240,8 @@ def ROLL(message, nonce):
     # pm-dice-(rollid) email
     
 
-@route("pm-dice-(rollid)@(host)")
-def DICE(message, nonce):
+@route("pm-dice-(rollid)@(host)", rollid="\d+")
+def DICE(message, rollid, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
         return # ignore    
@@ -254,7 +260,7 @@ def DICE(message, nonce):
 
 
 # main entry point, messaging the GM/Character
-@route("(address)@(host)", address="(([^p][^m][^-])|(...)|(....)).*")
+@route("(address)@(host)", address="^([^p][^m][^-]).*")
 @bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, address=None, host=None):
     sender = place_sender(message)
@@ -262,6 +268,8 @@ def START(message, address=None, host=None):
         return # ignore    
     if sender == UNKNOWN:
         if silent:
+            logging.debug(u"MESSAGE to %s@%s from %s - unknown" %
+                      (address, server_name, message['from']))
             return
         raise SMTPError(550, "Unknown sender")
 
@@ -271,7 +279,7 @@ def START(message, address=None, host=None):
         return # ignore
     # the message as been set as processed
 
-    lang = campaign_language(cid):
+    lang = campaign_language(cid)
     campaign_name = campaign_name(cid)
     
     recipients = get_recipients(message)
@@ -342,7 +350,7 @@ def START(message, address=None, host=None):
                     # this will be ignored by the server, but notifies
                     # the users unless is a send-as which will
                     # highlight the send-as to the players
-                    to_list.append('%s@%s' % (recipient server_name,))
+                    to_list.append('%s@%s' % (recipient, server_name))
                 if other != recipient:
                     other_character = get_character(cid, other)
                     to_list.append(formataddr(other_character['name'],
@@ -368,7 +376,7 @@ def START(message, address=None, host=None):
         cc_list = []
         
         for recipient in recipients:
-            if recipient == 'gm'
+            if recipient == 'gm':
                 continue
             character = get_character(cid, recipient)
             cc_list.append(formataddr(character['name'],
@@ -385,6 +393,7 @@ def START(message, address=None, host=None):
                                                 "%s@%s" % (short_form, server_name)),
                             To=gm_full,
                             Cc=cc_list,
-                            Subject="%s: %s" % (campaign_name, short_form)))
+                            Subject="%s: %s" % (campaign_name, short_form))
         relay.deliver(msg)
         return START
+

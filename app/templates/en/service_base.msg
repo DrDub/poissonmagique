@@ -1,4 +1,4 @@
-{% extends "base.msg" %}
+{% extends "en/base.msg" %}
 {% block content %}
 Hi,
 
