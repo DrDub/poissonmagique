@@ -1,1 +1,1 @@
-El juego $(campaign_name) le da la bienvenida
+El juego {{ campaign_name }} le da la bienvenida

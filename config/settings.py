@@ -3,7 +3,7 @@ import logging
 import os
 
 
-handlers = ['app.handlers.game', 'app.handlers.log'] # , 'app.handlers.dice'
+handlers = ['app.handlers.game', 'app.handlers.log', 'app.handlers.dice']
 
 server_name_config = 'localhost'
 

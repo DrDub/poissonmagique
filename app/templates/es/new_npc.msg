@@ -1,4 +1,4 @@
-{% extends "service_base.msg" %}
+{% extends "es/service_base.msg" %}
 {% block service_content %}
 El personaje {{ full_name }} con forma abreviada {{ short_form }} ha
 conseguido crearse de manera exitosa.

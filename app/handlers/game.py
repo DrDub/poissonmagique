@@ -14,13 +14,13 @@ from app.model.campaign import set_bouncing, place_sender, \
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode
 
-@route(".+")
-def GM_BOUNCE(message):
-    set_bouncing(message)
+#@route(".+")
+#def GM_BOUNCE(message):
+#    set_bouncing(message)
     
-@route(".+")
-def IGNORE_BOUNCE(message):
-    return START
+#@route(".+")
+#def IGNORE_BOUNCE(message):
+#    return START
 
 @route("pm-new-game@(host)")
 @stateless
@@ -71,6 +71,7 @@ def _new_campaign(message, lang, service_address):
     return START
                        
 @route("pm-register-(pc_or_npc)pc@(host)", pc_or_npc="n?")
+@stateless
 def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
     # check the sender is an active GM, otherwise raise 550
     sender = place_sender(message)
@@ -151,7 +152,8 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
         relay.deliver(msg)
         return START
 
-@route("pm-enroll-(nonce)@(host)")
+@route("pm-enroll-(nonce)@(host)", nonce=".+")
+@stateless
 def ENROLL(message, nonce, host=None):
     # check if the email address is know, if it is, croak
     sender = place_sender(message)
@@ -202,6 +204,7 @@ def ENROLL(message, nonce, host=None):
     return START
     
 @route("pm-end@(host)")
+@stateless
 def GAME_END(message, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
@@ -218,6 +221,7 @@ def GAME_END(message, host=None):
         sender = sender
 
 @route("pm-roll@(host)")
+@stateless
 def ROLL(message, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
@@ -240,28 +244,10 @@ def ROLL(message, host=None):
     # pm-dice-(rollid) email
     
 
-@route("pm-dice-(rollid)@(host)", rollid="\d+")
-def DICE(message, rollid, host=None):
-    sender = place_sender(message)
-    if sender == INTERNAL:
-        return # ignore    
-    if sender == UNKNOWN:
-        if silent:
-            return
-        raise SMTPError(550, "Unknown sender")
-
-    # TODO verify the rollid exists and belongs to the sender
-
-    # TODO perform the roll
-
-    # TODO report back to the sender and GM (if they are different)
-
-
-
-
 # main entry point, messaging the GM/Character
 @route("(address)@(host)", address="^([^p][^m][^-]).*")
-@bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
+@stateless
+#@bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, address=None, host=None):
     sender = place_sender(message)
     if sender == INTERNAL:
@@ -293,12 +279,11 @@ def START(message, address=None, host=None):
             if recipient.startswith('as-'):
                 if send_as:
                     other = send_as = recipient[3:].lower()
-                    # TODO localize
-                    full_content = "REPEATED as-%s & as-%s" % (send_as, other),
-                    msg = view.respond(locals(), "%s/base.msg" % (lang,),
+                    msg = view.respond(locals(), "%s/repeated_as.msg" % (lang,),
                                 From="gm@%s" % (server_name,),
                                 To=gm_full,
-                                Subject="%s: as- error" % (campaign_name,))
+                                Subject=view.render(locals(),
+                                               "%s/repeated_as.subj"  % (lang,)))
                     relay.deliver(msg)
                     return START
                 send_as = recipient[3:].lower()
@@ -309,14 +294,15 @@ def START(message, address=None, host=None):
             send_as = get_character(cid, send_as)
         
             if not send_as:
-                # TODO reply with error to the GM with list of valid send-as
-                # TODO localize
-                full_content = "UNKNOWN as-%s" % (original_send_as,),
-                msg = view.respond(locals(), "%s/base.msg" % (lang,),
+                # reply with error to the GM with list of valid send-as
+                all_characters = all_characters(cid)
+                send_as = original_send_as
+        
+                msg = view.respond(locals(), "%s/unknown_as.msg" % (lang,),
                                    From="gm@%s" % (server_name,),
                                    To=gm_full,
-                                   Subject="%s: unknown as-%s" %
-                                   (campaign_name,original_send_as,))
+                                   Subject=view.render(locals(),
+                                                "%s/unknown_as.subj"  % (lang,)))
                 relay.deliver(msg)
                 return START
 

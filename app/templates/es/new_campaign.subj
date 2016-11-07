@@ -1,1 +1,1 @@
-Nuevo juego: $(campaign_name)
+Nuevo juego: {{ campaign_name }}

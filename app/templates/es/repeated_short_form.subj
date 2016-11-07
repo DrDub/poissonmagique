@@ -1,1 +1,1 @@
-Ya existe: $(short_form)
+Ya existe: {{ short_form }}
