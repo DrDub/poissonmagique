@@ -1,43 +1,30 @@
 from salmon.routing import StateStorage, ROUTE_FIRST_STATE
-from webapp.poissonmagique.models import UserState
+import table as t
+
+MAX_TTL_IN_SEC = 1 * 7 * 24 * 60 * 60L # one week
 
 class UserStateStorage(StateStorage):
 
-    def clear(self):
-        for state in UserState.objects.all():
-            state.delete()
-
-    def _find_state(self, key, sender):
-        states = UserState.objects.filter(state_key = key,
-                                          from_address = sender)
-        if states:
-            return states[0]
-        else:
-            return None
-
     def get(self, key, sender):
-        stored_state = self._find_state(key, sender)
-        if stored_state:
-            return stored_state.state
+        state_key = self.key(key, sender)
+        if t.has_key(state_key):
+            return t.get(state_key)
         else:
             return ROUTE_FIRST_STATE
 
     def key(self, key, sender):
-        raise Exception("THIS METHOD MEANS NOTHING TO DJANGO!")
+        return "salmon-state-%s-%s"
 
     def set(self, key, sender, to_state):
-        stored_state = self._find_state(key, sender)
+        state_key = self.key(key, sender)
 
-        if stored_state:
+        if t.has_key(state_key):
             if to_state == "START":
                 # don't store these, they're the default when it doesn't exist
-                stored_state.delete()
-
-            stored_state.state = to_state
-            stored_state.save()
+                t.delete(state_key)
+            else:
+                t.set_key_ttl(state_key, to_state, MAX_TTL_IN_SEC)
         else:
             # avoid storing start states
             if to_state != "START":
-                stored_state = UserState(state_key = key, from_address = sender,
-                                         state=to_state)
-                stored_state.save()
+                t.set_key_ttl(state_key, to_state, MAX_TTL_IN_SEC)

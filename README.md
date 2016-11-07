@@ -1,6 +1,51 @@
-Poisson Magique is a Play-by-Post RPG email gateway and Web interface for Role Playing Games.
+Poisson Magique is a Play-by-Post (PbP) RPG email gateway and Web interface
+for Role Playing Games.
 
-It is a mail server + web interface to help with the GM tasks of modifying and forwarding emails in a PbP campaign.
+It is a mail server to help with the GM tasks of modifying and
+forwarding emails in a PbP campaign, as the GM itself or as the
+different player (character or non-character).
+
+Register an adventure by emailing:
+
+pm-new-campaign@pm
+
+Subject: Campaign Name
+
+At this stage, the campaign has already started.
+
+To add new player character, the GM sends an email to
+
+pm-register-pc@pm
+
+Subject: PC name (e.g., Alice Cooper)
+
+the system replies with the email address for enrolment:
+
+pm-enroll-alice@pm
+etc.
+
+Then other players email an empty email to the enrolment address and are signed up.
+
+
+The GM sends emails to Alice@pm etc or special accounts:
+
+pm-roll-dice@pm for dice rolls
+pm-register-npc@pm for NPCs
+
+To send emails as other characters, the GM sends email to as-Alice or
+other characters (only once).
+
+See http://wiki.duboue.net/index.php/Poisson_Magique/Example for a
+full example.
+
+
+For Spanish campaigns, the email goes to
+
+pm-new-campaign-es@pm
+
+and the system is set to Spanish from them one.
+
+
 
 WIP, see http://poissonmagique.net for details.
 
@@ -11,23 +56,19 @@ Deployment
 To setup the local settings you will need:
 
 * A working SMTP server that will relay messages for this server.
+* A redis installation to be used by the systems
 * To create a folder for the the mail queues, for example $HOME/run.
 
-Create config/localsettings.py and webapp/localsettings.py (see the
-sample_localsettings.py in each folder).
+Create config/localsettings.py (see sample_localsettings.py).
 
 The default listening port for the SMTP server is 1220 as specified in
 config/settings.py. This is the port you will need to configure in
 hubbed_hosts for exim4 (see below).
 
 ```bash
-$ PYTHONPATH=$PWD python webapp/manage.py syncdb
 $ salmon start
-$ salmon start --boot config.uploader --pid run/uploader.pid 
-$ PYTHONPATH=$PWD python webapp/manage.py runserver
 ```
 
-(you'll need to log into the django admin and change the Site from the default example.com)
 
 
 Exim4 Config

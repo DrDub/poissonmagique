@@ -5,26 +5,171 @@ from salmon.routing import route, route_like, stateless, Router
 from salmon.bounce import bounce_to
 from salmon.mail import MailResponse
 from salmon import view
-from app.model.campaign import find_sender, find_recipient, find_campaign_for_sender, is_gm
+from salmon.server import SMTPError
+from app.model.campaign import set_bouncing, place_sender, \
+     INTERNAL, UNKNOWN, campaign_name, campaign_language, \
+     character_exists, new_npc, new_enrolment
 from app.model.character import find_character
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode
 
+
 @route(".+")
 def GM_BOUNCE(message):
-    # mark GM as bouncing
-    human = find_sender(message.bounce.final_recipient)
-    human.is_bouncing = True
-    human.save()
+    set_bouncing(message)
+    
 
 @route(".+")
 def IGNORE_BOUNCE(message):
     return START
 
-# main entry point, messaging the GM
-@route("gm@(host)")
+@route("pm-new-campaign@(host)")
+def NEW_CAMPAIGN(message):
+    return _new_campaign(message, lang='es', 'pm-new-campaign')
+
+@route("pm-new-campaign-es@(host)")
+def NEW_CAMPAIGN(message):
+    return _new_campaign(message, lang='en', 'pm-new-campaign')
+    
+def _new_campaign(message, lang, service_address):
+    
+    # check if the email address is know, if it is, croak
+    sender = place_sender(message)
+    if sender != UNKNOWN:
+        msg = "Already playing"
+        if type(sender) is tuple:
+            msg = msg + " " + campaign_name(sender[0])
+        raise SMTPError(550, msg)
+    
+    # use subject for name of campaign
+    campaign_name = message['subject']
+    
+    # create campaign, set language to lang
+    cid = new_campaign(campaign_name, message['from'], lang)
+
+    # generate reply
+    attribution = get_attribution(message['from'])
+    msg = view.respond(locals(), "%s/new_campaign.msg" % (lang,),
+                           From="%s@%s" % (service_address, server_name),
+                           To=message['from'],
+                           Subject=view.render(locals(), "%s/new_campaign.subj"))
+
+    logging.debug(u"MESSAGE to %s@%s from %s, new campaign %s - %s" %
+                      (service_address, server_name,
+                           safe_unicode(message['from']),
+                      str(cid), campaign_name))
+    relay.deliver(msg)
+    return START
+                       
+@route("pm-register-(pc_or_npc)pc@(host)", pc_or_npc="n?")
+def NEW_CHARACTER(message, pc_or_npc):
+    # check the sender is an active GM, otherwise raise 550
+    sender = place_sender(message)
+
+    if sender == INTERNAL:
+        return # ignore
+
+    if sender == UNKNOWN:
+        raise SMTPError(550, "Unknown sender")
+    
+    if not sender[1]:
+        raise SMTPError(550, "Not a GM")
+    cid = sender[0]
+    lang = campaign_language(cid):
+    campaign_name = campaign_name(cid)
+    attribution = get_attribution(message['from'])
+    service_address = 'pm-register-' + ("n" if pc_or_npc else "") + "-pc"
+
+    # get name of the character from subject, produce short form,
+    # ensure short form doesn't collide with existing characters
+    full_name = message['from']
+
+    if '(' in full_name:
+        ( full_name, short_form ) = full_name.split('(')
+        full_name = full_name.strip()
+        short_from = short_form[0:-1].strip()
+    else:
+        short_form = full_name.split(' ')[0]
+        full_name = full_name.strip()
+    short_form = short_form.lower()
+
+    if character_exists(cid, short_form):
+        all_characters = all_characters(cid)
+        msg = view.respond(locals(), "%s/repeated_short_form.msg" % (lang,),
+                            From="%s@%s" % (service_address, server_name),
+                            To=message['from'],
+                            Subject=view.render(locals(),
+                                                    "%s/repeated_short_form.subj"))
+
+        logging.debug(u"DUPLICATE short form %s, campaign %s" %
+                        (short_form, str(cid)))
+        relay.deliver(msg)
+        return START
+
+    if pc_or_npc:
+        # create NPC, associate it with current campaign
+        new_npc(cid, short_form, full_name)
+
+        all_characters = all_characters(cid)
+
+        # return template on the campaign language confirming its creation
+        msg = view.respond(locals(), "%s/new_npc.msg" % (lang,),
+                            From="%s@%s" % (service_address, server_name),
+                            To=message['from'],
+                            Subject=view.render(locals(),
+                                                    "%s/new_npc.subj"))
+
+        logging.debug(u"NEW_NPC short form %s, campaign %s" %
+                        (short_form, str(cid)))
+        relay.deliver(msg)
+        return START
+    else:
+        # TODO create PC, associate it with current campaign
+
+        # TODO generate enrolment email
+
+        # TODO return template on the campaign language with the enrolment email
+
+
+# main entry point, messaging the GM/Character
+@route("(address)@(host)", address="(([^p][^m][^-])|(...)|(....)).*")
 @bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
-def START(message, host=None):
+def START(message, address=None, host=None):
+    # TODO internal sender, ignore
+    
+    # TODO check the sender is known otherwise raise 541
+    #   http://www.serversmtp.com/en/smtp-error
+
+    # TODO check the message haven't been processed already, otherwise
+    # ignore
+
+    # TODO set the message as been processed
+
+    # TODO determine whether the sender is a GM
+    sender_is_gm = False
+
+    if sender_is_gm:
+        # TODO determine if the email is sent as somebody else
+        
+        send_as = None
+
+        # TODO validate the as-XYZ is valid or note, otherwise
+        if not valid_send_as:
+            # TODO reply with error to the GM with list of valid send-as
+
+            # TODO use template on the campaign language
+
+        # TODO for each recipient that is not an NPC, generate an
+        # email either from the gm or from whomever is send_as to them
+        # with cc: to the other characters and send them
+
+    else:
+        # TODO change the sender to their character email and send to GM
+
+
+
+    # OLD email GM
+    
     logging.info(u"MESSAGE to gm@%s:\n%s" % (host, safe_unicode(str(message))))
     # check the sender
     human = _check_sender(message)
@@ -72,9 +217,9 @@ def START(message, host=None):
 
         relay.deliver(new_message)
 
-# secondary entry point, messaging a character
-@route("(address)@(host)", address="(([^r][^o][^l][^l][^-])|(...)|(....)).*")
-def START(message, address=None, host=None):
+
+    # OLD handling messaging a character
+    
     human = _check_sender(message)
     if human is None:
         # TODO determine which adventure this player is or just log it
@@ -136,11 +281,6 @@ def _check_sender(message):
     if human is None:
         # unknown person
         logging.debug(u"MESSAGE to %s from %s, unknown sender" % (safe_unicode(message['to']), safe_unicode(message['from'])))
-        if silent:
-            #TODO log to unknown sender queue
-            return None
-        else:
-            #TODO go to a "send informational message saying we don't know you"
-            return None
-
+        raise SMTPError(550, "We don't know you")
+    
     return human
