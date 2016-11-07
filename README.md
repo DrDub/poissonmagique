@@ -21,10 +21,11 @@ Subject: PC name (e.g., Alice Cooper)
 
 the system replies with the email address for enrolment:
 
-pm-enroll-alice@pm
+pm-enroll-72jase@pm  (for Alice)
 etc.
 
-Then other players email an empty email to the enrolment address and are signed up.
+Then other players email an empty email to the enrolment address and
+are signed up.
 
 
 The GM sends emails to Alice@pm etc or special accounts:
@@ -35,6 +36,10 @@ pm-register-npc@pm for NPCs
 To send emails as other characters, the GM sends email to as-Alice or
 other characters (only once).
 
+The game continues until the GM sends an email to pm-end. If a player
+sends an email to pm-end their email address is purged from the
+game.
+
 See http://wiki.duboue.net/index.php/Poisson_Magique/Example for a
 full example.
 
@@ -44,6 +49,7 @@ For Spanish campaigns, the email goes to
 pm-new-campaign-es@pm
 
 and the system is set to Spanish from them one.
+
 
 
 

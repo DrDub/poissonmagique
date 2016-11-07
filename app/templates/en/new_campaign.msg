@@ -30,7 +30,7 @@ address
 
   as-Alice@{{ server_name }}
 
-By using this Poisson Magique server at $(server_name) you agree to
+By using this Poisson Magique server at {{ server_name }} you agree to
 license your emails under CC-BY-SA 3.0 licence.
 
 To finish this campaign, send an email to

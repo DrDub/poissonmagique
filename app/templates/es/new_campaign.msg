@@ -35,8 +35,9 @@ especial de correo
 
   as-Alice@{{ server_name }}
 
-Al usar este servidor de Poisson Magique en $(server_name) Ud. está de
-acuerdo con hacer disponibles sus mensajes según una licencia CC-BY-SA 3.0.
+Al usar este servidor de Poisson Magique en {{ server_name }} Ud. está
+de acuerdo con hacer disponibles sus mensajes según una licencia
+CC-BY-SA 3.0.
 
 Para terminar esta campaña, envíe un correo electrónico a
 

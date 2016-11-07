@@ -1,8 +1,10 @@
 from config.settings import server_name
-from email.utils import parseaddr
+from email.utils import parseaddr, formataddr, getaddresses
 import app.models.table as t
 import logging
 import re
+import hashlib
+import random
 
 # data model:
 
@@ -17,9 +19,9 @@ import re
 # campaign-%cid -> object ( gm: %email, name: %name, language: %lang )
 # campaign-%cid-characters -> list of %localpart ("Alice", etc)
 # character-%cid-%localpart -> object ( name: %fullname,
-#    address: %localpart, controller: email, is_npc: "t/f",
+#    address: %localpart, controller: email, is_npc: "1/0",
 #    enrollment: "address" )
-# enrolment-%customlocalpart -> object( campaign: %cid, character: %locapart )
+# enrollment-%customlocalpart -> object( campaign: %cid, character: %locapart )
 
 UNKNOWN = "UNKNOWN"
 INTERNAL = "INTERNAL"
@@ -44,6 +46,23 @@ def place_sender(message):
     name, sender = parseaddr(message['from'])
     return place_address(sender)
 
+def get_recipients(message):
+    """Returns a list of raw localparts for local email addresses, to:
+    and cc: concatenated. Ignores external emails.
+    """
+    tos = message.get_all('to', [])
+    ccs = messageg.get_all('cc', [])
+    resent_tos = message.get_all('resent-to', [])
+    resent_ccs = message.get_all('resent-cc', [])
+    all_recipients = getaddresses(tos + ccs + resent_tos + resent_ccs)
+    addresses = map(lambda x:x[1], all_recipients)
+    result = []
+    for address in addresses:
+        (localpart, domain) = address.split('@')
+        if domain == server_name:
+            result.append(localpart)
+    return result
+    
 def place_recipients(message):
     """ 
     Determine the recipients of a message
@@ -70,6 +89,12 @@ def campaign_name(cid):
 
 def campaign_language(cid):
     return t.get_field("campaign-%s" % (str(cid),), "language")
+
+def campaign_gm(cid):
+    """ email address, full email header, attribution"""
+    gm_address = t.get_field("campaign-%s" % (str(cid),), "gm")
+    gm_attribution = t.get('ext-email-%s-attribution' % (gm_address,))
+    return ( gm_address, formataddr(gm_attribution, gm_address), gm_attribution )
 
 def new_campaign(name, full_from, language):
     name, sender = parseaddr(full_from)
@@ -107,42 +132,66 @@ def all_characters(cid):
         result.append(t.get_object('campaign-%s-%s' % (str(cid), short_form)))
     return result
 
-
-########## OLD
-
-
-def find_recipient(mail_address, campaign=None, name='recipient'):
-    """
-    Find the human behind a recipient email, either poisson-UID or character name.
-    Needs a campaign ID to resolve characters
-    """
-    match = re.match('poisson-([0-9]+)', mail_address)
-    human = ""
-    if match is not None:
-        uid = match.groups(0)[0]
-        try:
-            user = User.objects.get(pk=uid)
-        except User.DoesNotExist:
-            logging.debug("Unknown %s: UID %d", name, uid)
-            return None, None
-        try:
-            human = Human.objects.get(user=user)
-        except Human.DoesNotExist:
-            logging.debug("Unknown %s: no human for UID %d (%s)", name, uid, user.name)
-            return None
-        return human, None
-    elif campaign is not None:
-        if mail_address == "gm@%s" % (server_name,):
-            return campaign.gm, None
-        else:
-            try:
-                character = Character.objects.get(mail_address=mail_address, campaign=campaign)
-                human = character.controller
-                return human, character
-            except Character.DoesNotExist:
-                logging.debug("Unknown %s for campaign %s: %s", name, campaign.name, mail_address)
-                return None, None
-    else:
-        logging.debug("Can't resolve %s without a campaign: %s", name, mail_address)
-        return None, None
+def get_character(cid, short_form):
+    """Returns a dictionary with keys name, address, controller, is_npc"""
     
+    key ='campaign-%s-%s' % (str(cid), short_form)
+    if t.has_key(key):
+        return  t.get_object(key)
+    return None
+
+def new_npc(cid, short_form, full_name):
+    short_form = short_form.strip().lower()
+    cid = str(cid)
+    t.list_append('campaign-%s-characters' % (cid,), short_form)
+    t.create_object( 'character-%s-%s' %(cid,short_form),
+                         name=full_name,
+                         address=short_form,
+                         controller=t.get_field('campaign-%s' % (cid,), 'gm'),
+                         is_npc=1 )
+    return short_form
+    
+def new_pc(cid, short_form, full_name):
+    short_form = short_form.strip().lower()
+    cid = str(cid)
+
+    while True:
+        nonce = hashlib.sha256("%s-%s-%d" %
+                                   (cid, short_form,
+                                        random.randint(0,9001))).hexdigest()[0:10]
+        enrollment_key = 'enrollment-%s' % (nonce,)
+        if not t.has_key(enrollment):
+            break
+
+    t.create_object(enrollment_key,
+                        campaign=cid, character=short_form)
+    
+    t.list_append('campaign-%s-characters' % (cid,), short_form)
+    t.create_object( 'character-%s-%s' %(cid,short_form),
+                         name=full_name,
+                         address=short_form,
+                         is_npc=0,
+                         enrollment=nonce )
+    return nonce
+
+def find_enrollment(nonce):
+    enrollment_key = 'enrollment-%s' % (nonce,)
+    if not t.has_key(enrollment_key):
+        return None
+
+    obj = t.get_object(enrollment_key)
+
+    return obj['campaign'], obj['character']
+
+def do_enrollment(cid, nonce, full_from, short_form):
+    enrollment_key = 'enrollment-%s' % (nonce,)
+    t.delete_key(enrollment_key)
+
+    (name, email) = parseaddr(full_from)
+
+    t.set_field('character-%s-%s' % (cid, short_form), 'controller', email)
+    t.set_key('ext-email-%s-attribution' % (email,), name)
+    t.delete_key('ext-email-%s-bouncing' % (email,))
+    t.delete_key('ext-email-%s-is-gm' % (email,))
+    t.set_key('ext-email-%s-character' % (email,), short_form)
+    t.set_key('ext-email-%s-campaign' % (email,), cid)
