@@ -8,7 +8,7 @@ import table as t
 # campaign-%cid-emails -> [ %id ]
 
 def tst_email_processed(message, cid):
-    msgid = message['Message-ID']
+    msgid = message['message-id']
     key = 'msg-%s' % (msgid,)
     if t.has_key(key):
         return True

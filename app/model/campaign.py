@@ -77,12 +77,12 @@ def place_recipients(message):
 def place_address(address):
     if is_internal(address):
         return INTERNAL
-    if not t.has_key("ext-email-%s-campaign"):
+    if not t.has_key("ext-email-%s-campaign" % (address,)):
         return UNKNOWN
-    cid = t.get("ext-email-%s-campaign")
-    if t.has_key("ext-email-%s-is-gm"):
+    cid = t.get("ext-email-%s-campaign" % (address,))
+    if t.has_key("ext-email-%s-is-gm" % (address,)):
         return ( cid, True, None )
-    return ( cid, False, t.get("ext-email-%s-character") )
+    return ( cid, False, t.get("ext-email-%s-character" % (address,)) )
 
 def campaign_name(cid):
     return t.get_field("campaign-%s" % (str(cid),), "name")
