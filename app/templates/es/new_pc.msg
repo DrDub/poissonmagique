@@ -5,7 +5,7 @@ conseguido crearse de manera exitosa y esta listo para registrarse.
 
 Pídale a su jugador/a que se registre enviando un correo electrónico a
 
-  pm-enroll-{{ enrollment-address}}@{{ server_name }}
+  pm-enroll-{{ enrollment_address}}@{{ server_name }}
 
 Personajes actuales:
 
@@ -16,6 +16,9 @@ Personajes actuales:
 {% endfor %}
 
 Ud. puede ahora enviar correos electrónicos como este nuevo personaje
-incluyendo as-{{ short_form }}@{{ server_name }} como una dirección
-extra a la que envía el correo electrónico.
+incluyendo
+
+  as-{{ short_form }}@{{ server_name }}
+
+como una dirección extra a la que envía el correo electrónico.
 {% endblock %}

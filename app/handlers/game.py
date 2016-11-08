@@ -7,16 +7,14 @@ from salmon.mail import MailResponse
 from salmon import view
 from salmon.server import SMTPError
 from app.model.emails import tst_email_processed
-from app.model.campaign import set_bouncing, place_sender, \
-     INTERNAL, UNKNOWN, campaign_name, campaign_language, \
-     character_exists, new_npc, new_pc, find_enrollment, \
-     get_character, new_campaign, get_attribution
+import app.model.campaign as c
+from app.model.campaign import INTERNAL, UNKNOWN
 from app.model.dice import find_roll, set_roll_outcome
 from utils.unicode_helper import safe_unicode
 
 #@route(".+")
 #def GM_BOUNCE(message):
-#    set_bouncing(message)
+#    c.set_bouncing(message)
     
 #@route(".+")
 #def IGNORE_BOUNCE(message):
@@ -35,13 +33,13 @@ def NEW_CAMPAIGN_ES(message, host=None):
 def _new_campaign(message, lang, service_address):
     
     # check if the email address is know, if it is, croak
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore
     if sender != UNKNOWN:
         msg = "Already playing"
         if type(sender) is tuple:
-            msg = msg + " " + campaign_name(sender[0])
+            msg = msg + " " + c.campaign_name(sender[0])
         if silent:
             logging.debug(u"MESSAGE to %s@%s from %s - already playing" %
                       (service_address, server_name, message['from']))
@@ -53,10 +51,10 @@ def _new_campaign(message, lang, service_address):
     server_name = server_name_config
     
     # create campaign, set language to lang
-    cid = new_campaign(campaign_name, message['from'], lang)
+    cid = c.new_campaign(campaign_name, message['from'], lang)
 
     # generate reply
-    attribution = get_attribution(message['from'])
+    attribution = c.get_attribution(message['from'])
     msg = view.respond(locals(), "%s/new_campaign.msg" % (lang,),
                            From="%s@%s" % (service_address, server_name),
                            To=message['from'],
@@ -77,7 +75,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
     server_name = server_name_config
     
     # check the sender is an active GM, otherwise raise 550
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         logging.debug(u"INTERNAL ignoring %s@%s from %s" %
                       (service_address, server_name, message['from']))
@@ -96,25 +94,26 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
             return
         raise SMTPError(550, "Not a GM")
     cid = sender[0]
-    lang = campaign_language(cid)
-    campaign_name = campaign_name(cid)
-    attribution = get_attribution(message['from'])
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    attribution = c.get_attribution(message['from'])
 
     # get name of the character from subject, produce short form,
     # ensure short form doesn't collide with existing characters
-    full_name = message['from']
+    full_name = message['subject']
 
     if '(' in full_name:
         ( full_name, short_form ) = full_name.split('(')
         full_name = full_name.strip()
-        short_from = short_form[0:-1].strip()
+        if ')' in short_form:
+            short_from = short_form.split(')')[0].strip()
     else:
         short_form = full_name.split(' ')[0]
         full_name = full_name.strip()
     short_form = short_form.lower()
 
-    if character_exists(cid, short_form):
-        all_characters = all_characters(cid)
+    if c.character_exists(cid, short_form):
+        all_characters = c.all_characters(cid)
         msg = view.respond(locals(), "%s/repeated_short_form.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
@@ -128,9 +127,8 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
     if pc_or_npc:
         # create NPC, associate it with current campaign
-        new_npc(cid, short_form, full_name)
-
-        all_characters = all_characters(cid)
+        c.new_npc(cid, short_form, full_name)
+        all_characters = c.all_characters(cid)
 
         # return template on the campaign language confirming its creation
         msg = view.respond(locals(), "%s/new_npc.msg" % (lang,),
@@ -146,7 +144,8 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
     else:
         # create PC, associate it with current campaign and generate
         # enrolment email
-        enrollment_address = new_pc(cid, short_form, full_name)
+        enrollment_address = c.new_pc(cid, short_form, full_name)
+        all_characters = c.all_characters(cid)
 
         # return template on the campaign language with the enrollment email
         msg = view.respond(locals(), "%s/new_pc.msg" % (lang,),
@@ -167,7 +166,7 @@ def ENROLL(message, nonce, host=None):
     service_address = 'pm-enroll-%s' % (nonce,)
 
     # check if the email address is know, if it is, croak
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         logging.debug(u"INTERNAL ignoring %s@%s from %s" %
                       (service_address, server_name, message['from']))        
@@ -175,14 +174,14 @@ def ENROLL(message, nonce, host=None):
     if sender != UNKNOWN:
         msg = "Already playing"
         if type(sender) is tuple:
-            msg = msg + " " + campaign_name(sender[0])
+            msg = msg + " " + c.campaign_name(sender[0])
         if silent:
             logging.debug(u"ALREADY ignoring %s@%s from %s - already playing" %
                       (service_address, server_name, message['from']))
             return
         raise SMTPError(550, msg)
 
-    enrollment = find_enrollment(nonce)
+    enrollment = c.find_enrollment(nonce)
 
     if enrollment is None:
         if silent:
@@ -193,11 +192,11 @@ def ENROLL(message, nonce, host=None):
 
     (cid, short_form) = enrollment
 
-    do_enrollment(cid, nonce, message['from'], short_form)
+    c.do_enrollment(cid, nonce, message['from'], short_form)
 
-    lang = campaign_language(cid)
-    campaign_name = campaign_name(cid)
-    attribution = get_attribution(message['from'])
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    attribution = c.get_attribution(message['from'])
 
     msg = view.respond(locals(), "%s/enrolled_pc.msg" % (lang,),
                            From="%s@%s" % (service_address, server_name),
@@ -222,7 +221,7 @@ def ENROLL(message, nonce, host=None):
 @route("pm-end@(host)")
 @stateless
 def GAME_END(message, host=None):
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore    
     if sender == UNKNOWN:
@@ -239,7 +238,7 @@ def GAME_END(message, host=None):
 @route("pm-roll@(host)")
 @stateless
 def ROLL(message, host=None):
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore    
     if sender == UNKNOWN:
@@ -265,7 +264,10 @@ def ROLL(message, host=None):
 @stateless
 #@bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, address=None, host=None):
-    sender = place_sender(message)
+    if(address.startswith("pm-")):
+        return # ignore
+    
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore    
     if sender == UNKNOWN:
@@ -282,8 +284,8 @@ def START(message, address=None, host=None):
         return # ignore
     # the message as been set as processed
 
-    lang = campaign_language(cid)
-    campaign_name = campaign_name(cid)
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
     server_name = server_name_config    
     
     recipients = get_recipients(message)
@@ -309,11 +311,11 @@ def START(message, address=None, host=None):
         # validate the as-XYZ is valid or note, otherwise
         if send_as:
             original_send_as = send_as
-            send_as = get_character(cid, send_as)
+            send_as = c.get_character(cid, send_as)
         
             if not send_as:
                 # reply with error to the GM with list of valid send-as
-                all_characters = all_characters(cid)
+                all_characters = c.all_characters(cid)
                 send_as = original_send_as
         
                 msg = view.respond(locals(), "%s/unknown_as.msg" % (lang,),
@@ -344,7 +346,7 @@ def START(message, address=None, host=None):
                 continue
             if recipient.startswith('pm-'):
                 continue
-            character = get_character(cid, recipient)
+            character = c.get_character(cid, recipient)
             
             to_list = []
             for other in recipients:
@@ -356,14 +358,14 @@ def START(message, address=None, host=None):
                     # highlight the send-as to the players
                     to_list.append('%s@%s' % (recipient, server_name))
                 if other != recipient:
-                    other_character = get_character(cid, other)
+                    other_character = c.get_character(cid, other)
                     to_list.append(formataddr(other_character['name'],
                                                   '%s@%s' % (other,
                                                                  server_name,)))
             # sort them
             to_list = sorted(to_list)
 
-            attribution = get_attribution(character['controller'])
+            attribution = c.get_attribution(character['controller'])
             msg = view.respond(locals(), "%s/base.msg" % (lang,),
                                    From=sender,
                             To=formataddr(attribution, character['controller']),
@@ -371,7 +373,7 @@ def START(message, address=None, host=None):
                             Subject=campaign_name)
     else:
         short_form = sender[2]
-        full_character = get_character(cid, short_form)
+        full_character = c.get_character(cid, short_form)
         
         # change the sender to their character email and send to GM
         (gm_address, gm_full, attribution) = campaign_gm(cid)
@@ -382,7 +384,7 @@ def START(message, address=None, host=None):
         for recipient in recipients:
             if recipient == 'gm':
                 continue
-            character = get_character(cid, recipient)
+            character = c.get_character(cid, recipient)
             cc_list.append(formataddr(character['name'],
                                           '%s@%s' % (recipient,
                                                          server_name,)))

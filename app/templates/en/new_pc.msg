@@ -5,7 +5,7 @@ has been created and it is ready to enroll.
 
 Ask your player to enroll by sending an email to
 
-  pm-enroll-{{ enrollment-address}}@{{ server_name }}
+  pm-enroll-{{ enrollment_address}}@{{ server_name }}
 
 Known characters:
 
@@ -15,6 +15,9 @@ Known characters:
 
 {% endfor %}
 
-You can now send an email as this new character by including as-{{
-short_form }}@{{ server_name }} as an extra email recipient.
+You can now send an email as this new character by including
+
+  as-{{ short_form }}@{{ server_name }}
+  
+as an extra email recipient.
 {% endblock %}

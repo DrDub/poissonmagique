@@ -1,1 +1,1 @@
-Welcome to $(campaign_name)
+Welcome to {{ campaign_name }}

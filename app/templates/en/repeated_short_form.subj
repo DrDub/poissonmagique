@@ -1,1 +1,1 @@
-Repeated: $(short_form)
+Repeated: {{ short_form }}

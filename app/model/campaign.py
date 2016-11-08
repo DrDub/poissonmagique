@@ -160,7 +160,7 @@ def new_pc(cid, short_form, full_name):
                                    (cid, short_form,
                                         random.randint(0,9001))).hexdigest()[0:10]
         enrollment_key = 'enrollment-%s' % (nonce,)
-        if not t.has_key(enrollment):
+        if not t.has_key(enrollment_key):
             break
 
     t.create_object(enrollment_key,
