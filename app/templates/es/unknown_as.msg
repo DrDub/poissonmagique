@@ -12,7 +12,7 @@ original.
 O puede también agregar un nuevo personaje no jugador enviando un
 correo electrónico a
 
-  pm-register-npc@{{ server_name }}
+  pm-new-npc@{{ server_name }}
 
 Utilice el nombre del personaje como el asunto del correo electrónico.
 De manera opcional, puede especificar la forma abreviada del nombre

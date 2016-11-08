@@ -23,6 +23,30 @@ def DICE(message, rollid, host=None):
 
     # TODO report back to the sender and GM (if they are different)
 
+@route("pm-roll@(host)")
+@stateless
+def ROLL(message, host=None):
+    sender = c.place_sender(message)
+    if sender == INTERNAL:
+        return # ignore    
+    if sender == UNKNOWN:
+        if silent:
+            return
+        raise SMTPError(550, "Unknown sender")
+    if not sender[1]:
+        if silent:
+            return
+        raise SMTPError(550, "Only GMs can ask for rolls")
+
+    # TODO find the recipient that is a PC (if none, internal roll
+    # from the GM)
+
+    # TODO find the roll commands
+
+    # TODO for each roll command, register a roll-id and send a
+    # pm-dice-(rollid) email
+    
+
 
 # dice entry point
 ## @route("roll-(hashid)@(host)", hashid="[0-9]+")

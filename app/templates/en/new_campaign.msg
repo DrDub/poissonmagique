@@ -4,14 +4,14 @@ Your new game '{{ campaign_name }}' has been created.
 
 You can add player characters by sending an email to
 
-  pm-register-pc@{{ server_name }}
+  pm-new-pc@{{ server_name }}
 
 You will then receive a special email address you can distribute to
 your players for them to enroll the campaign with that character.
 
 or you can add non-player characters by sending an email to
 
-  pm-register-npc@{{ server_name }}
+  pm-new-npc@{{ server_name }}
 
 In both cases, set the subject of the email to the name of the
 character. Optionally, you can specify a short form between
@@ -28,7 +28,7 @@ non-player) by carbon copying the special email as-<short form>, for
 example, to send an email as Alice Cooper, use the special email
 address
 
-  as-Alice@{{ server_name }}
+  as-alice@{{ server_name }}
 
 By using this Poisson Magique server at {{ server_name }} you agree to
 license your emails under CC-BY-SA 3.0 licence.

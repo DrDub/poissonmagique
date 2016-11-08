@@ -4,7 +4,7 @@ Su nuevo juego '{{ campaign_name }}' ha sido creado.
 
 Puede añadir nuevos jugadores enviando un correo electrónico a
 
-  pm-register-pc@{{ server_name }}
+  pm-new-pc@{{ server_name }}
 
 Entonces recibirá una dirección especial de correo electrónico que
 puede distribuir a sus jugadores para que se registren en la campaña
@@ -13,7 +13,7 @@ para jugar a dicho personaje.
 O puede también agregar personajes no jugadores enviando un correo
 electrónico a
 
-  pm-register-npc@{{ server_name }}
+  pm-new-npc@{{ server_name }}
 
 En ambos casos, utilice el nombre del personaje como el asunto del
 correo electrónico. De manera opcional, puede especificar la forma
@@ -33,7 +33,7 @@ de correo electrónica especial as-<forma abreviada>, por ejemplo, para
 enviar un correo electrónico como Alice Cooper, utilice la dirección
 especial de correo
 
-  as-Alice@{{ server_name }}
+  as-alice@{{ server_name }}
 
 Al usar este servidor de Poisson Magique en {{ server_name }} Ud. está
 de acuerdo con hacer disponibles sus mensajes según una licencia

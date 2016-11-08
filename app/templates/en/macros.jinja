@@ -1,6 +1,6 @@
 {%- macro character_list(all_characters) -%}
 Known characters:
 {% for character in all_characters %}
-* {{ character.address }}: {{ character.name }} ({%- if character.is_npc %}NPC{%- else -%}PC{%- endif -%})
+* {{ character.address }}: {{ character.name }} ({%- if character.is_npc == '1' %}NPC{%- else -%}PC{%- endif -%})
 {%- endfor -%}
 {% endmacro %}

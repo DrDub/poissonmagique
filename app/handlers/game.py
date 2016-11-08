@@ -68,10 +68,10 @@ def _new_campaign(message, lang, service_address):
     relay.deliver(msg)
     return
                        
-@route("pm-register-(pc_or_npc)pc@(host)", pc_or_npc="n?")
+@route("pm-new-(pc_or_npc)pc@(host)", pc_or_npc="n?")
 @stateless
 def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
-    service_address = 'pm-register-' + ("n" if pc_or_npc else "") + "pc"
+    service_address = 'pm-new-' + ("n" if pc_or_npc else "") + "pc"
     server_name = server_name_config
     
     # check the sender is an active GM, otherwise raise 550
@@ -206,17 +206,16 @@ def ENROLL(message, nonce, host=None):
                                                    "%s/enrolled_pc.subj" % (lang,)))
 
     logging.debug(u"ENROLLED short form %s, enrolled at %s, campaign %s" %
-                      (short_form, enrollment_address, str(cid)))
+                      (short_form, service_address, str(cid)))
     relay.deliver(msg)
 
-    (gm_address, gm_full, attribution) = campaign_gm(cid)
+    (gm_address, gm_full, attribution) = c.campaign_gm(cid)
     msg = view.respond(locals(), "%s/enrolled_gm.msg" % (lang,),
                            From="%s@%s" % (service_address, server_name),
                            To=gm_full,
                            Subject=view.render(locals(),
                                                    "%s/enrolled_gm.subj" % (lang,)))
     relay.deliver(msg)
-    
     return
     
 @route("pm-end@(host)")
@@ -236,35 +235,13 @@ def GAME_END(message, host=None):
         # TODO PC, drop to NPC and inform the GM
         sender = sender
 
-@route("pm-roll@(host)")
-@stateless
-def ROLL(message, host=None):
-    sender = c.place_sender(message)
-    if sender == INTERNAL:
-        return # ignore    
-    if sender == UNKNOWN:
-        if silent:
-            return
-        raise SMTPError(550, "Unknown sender")
-    if not sender[1]:
-        if silent:
-            return
-        raise SMTPError(550, "Only GMs can ask for rolls")
-
-    # TODO find the recipient that is a PC (if none, internal roll
-    # from the GM)
-
-    # TODO find the roll commands
-
-    # TODO for each roll command, register a roll-id and send a
-    # pm-dice-(rollid) email
-    
-
 # main entry point, messaging the GM/Character
-@route("(address)@(host)", address="^[^p][^m][^-].*")
+@route("(address)@(host)", address=".+")
 @stateless
 #@bounce_to(soft=GM_BOUNCE, hard=GM_BOUNCE)
 def START(message, address=None, host=None):
+    server_name = server_name_config
+    
     if(address.startswith("pm-")):
         return # ignore
     
@@ -289,11 +266,11 @@ def START(message, address=None, host=None):
     campaign_name = c.campaign_name(cid)
     server_name = server_name_config    
     
-    recipients = get_recipients(message)
+    recipients = c.get_recipients(message)
     
-    if sender[1]:
+    if sender[1]: # GM EMAIL
         # determine if the email is sent as somebody else
-        (gm_address, gm_full, attribution) = campaign_gm(cid)
+        (gm_address, gm_full, attribution) = c.campaign_gm(cid)
          
         send_as = None
         for recipient in recipients:
@@ -328,11 +305,9 @@ def START(message, address=None, host=None):
                 return
 
         if send_as:
-           sender = formataddr(send_as['name'],
-                                   '%s@%s' % (send_as['address'],
-                                                  server_name))
+           sender = formataddr( (send_as['name'], '%s@%s' % (send_as['address'], server_name)) )
         else:
-            sender = 'gm@%s' % (server_name,)
+           sender = 'gm@%s' % (server_name,)
 
         # for each recipient that is not an NPC, generate an email
         # either from the gm or from whomever is send_as to them with
@@ -348,36 +323,60 @@ def START(message, address=None, host=None):
             if recipient.startswith('pm-'):
                 continue
             character = c.get_character(cid, recipient)
+
+            if int(character['is_npc']) :
+                continue
+
+            if character is None:
+                #TODO localize
+                full_content = "UNKNOWN: " + recipient
+                msg = view.respond(locals(), "%s/base.msg" % (lang,),
+                                    From="gm@%s" % (server_name,),
+                                    To=gm_full,
+                                    Subject=full_content)
+                logging.debug(u"INVALID character %s" % (recipient,))
+                relay.deliver(msg)
+                return # ignore
             
-            to_list = []
+            cc_list = []                    
             for other in recipients:
                 if other.startswith('as-'):
-                    to_list.append('gm@%s' % (server_name,))
-                if other.startswith('pm-') and not send_as:
+                    cc_list.append('gm@%s' % (server_name,))
+                elif other.startswith('pm-') and not send_as:
                     # this will be ignored by the server, but notifies
                     # the users unless is a send-as which will
                     # highlight the send-as to the players
-                    to_list.append('%s@%s' % (recipient, server_name))
-                if other != recipient:
+                    cc_list.append('%s@%s' % (recipient, server_name))
+                elif other != recipient:
                     other_character = c.get_character(cid, other)
-                    to_list.append(formataddr(other_character['name'],
-                                                  '%s@%s' % (other,
-                                                                 server_name,)))
+                    if other_character is None:
+                        full_content = "UNKNOWN: " + other
+                        msg = view.respond(locals(), "%s/base.msg" % (lang,),
+                                    From="gm@%s" % (server_name,),
+                                    To=gm_full,
+                                    Subject=full_content)
+                        logging.debug(u"INVALID character %s" % (othert,))
+                        relay.deliver(msg)
+                        return # ignore
+                    
+                    cc_list.append(formataddr( (other_character['name'], '%s@%s' % (other,server_name,)) ))
             # sort them
-            to_list = sorted(to_list)
+            cc_list = sorted(cc_list)
 
             attribution = c.get_attribution(character['controller'])
             msg = view.respond(locals(), "%s/base.msg" % (lang,),
-                                   From=sender,
-                            To=formataddr(attribution, character['controller']),
-                            Cc=to_list,
+                            From=sender,
+                            To=formataddr( (attribution, character['controller']) ),
                             Subject=campaign_name)
+            if cc_list:
+                msg['cc'] = ", ".join(cc_list)
+            relay.deliver(msg)
     else:
         short_form = sender[2]
         full_character = c.get_character(cid, short_form)
         
         # change the sender to their character email and send to GM
-        (gm_address, gm_full, attribution) = campaign_gm(cid)
+        (gm_address, gm_full, attribution) = c.campaign_gm(cid)
         
         # cc: for show
         cc_list = []
@@ -386,9 +385,7 @@ def START(message, address=None, host=None):
             if recipient == 'gm':
                 continue
             character = c.get_character(cid, recipient)
-            cc_list.append(formataddr(character['name'],
-                                          '%s@%s' % (recipient,
-                                                         server_name,)))
+            cc_list.append(formataddr( (character['name'], '%s@%s' % (recipient,server_name,)) ))
         # sort them
         cc_list = sorted(cc_list)
 
@@ -396,11 +393,11 @@ def START(message, address=None, host=None):
         full_content = message.body()
         #TODO check message.base.parts
         msg = view.respond(locals(), "%s/base.msg" % (lang,),
-                            From=formataddr(full_character['name'],
-                                                "%s@%s" % (short_form, server_name)),
+                            From=formataddr( (full_character['name'], "%s@%s" % (short_form, server_name)) ),
                             To=gm_full,
-                            Cc=cc_list,
-                            Subject="%s: %s" % (campaign_name, short_form))
+                            Subject="%s: %s" % (campaign_name, full_character['name']))
+        if cc_list:
+                msg['cc'] = ", ".join(cc_list)
         relay.deliver(msg)
         return
 

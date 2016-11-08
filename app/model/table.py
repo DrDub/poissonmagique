@@ -55,7 +55,7 @@ def get_field(key, field):
     return r.hget(_key(key), field)
 
 def add_to_list(key, elem):
-    r.ladd(_key(key), elem)
+    r.rpush(_key(key), elem)
 
 def list_elems(key):
     length = r.llen(_key(key))

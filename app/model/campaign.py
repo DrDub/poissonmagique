@@ -50,17 +50,24 @@ def get_recipients(message):
     """Returns a list of raw localparts for local email addresses, to:
     and cc: concatenated. Ignores external emails.
     """
-    tos = message.get_all('to', [])
-    ccs = messageg.get_all('cc', [])
-    resent_tos = message.get_all('resent-to', [])
-    resent_ccs = message.get_all('resent-cc', [])
+    def get_all(key):
+        _all = message[key]
+        if  _all is None:
+            return []
+        if type(_all) is not list:
+            return [ _all ]
+        
+    tos = get_all('to')
+    ccs = get_all('cc')
+    resent_tos = get_all('resent-to')
+    resent_ccs = get_all('resent-cc')
     all_recipients = getaddresses(tos + ccs + resent_tos + resent_ccs)
     addresses = map(lambda x:x[1], all_recipients)
     result = []
     for address in addresses:
         (localpart, domain) = address.split('@')
         if domain == server_name:
-            result.append(localpart)
+            result.append(localpart.lower())
     return result
     
 def place_recipients(message):
@@ -94,7 +101,7 @@ def campaign_gm(cid):
     """ email address, full email header, attribution"""
     gm_address = t.get_field("campaign-%s" % (str(cid),), "gm")
     gm_attribution = t.get('ext-email-%s-attribution' % (gm_address,))
-    return ( gm_address, formataddr(gm_attribution, gm_address), gm_attribution )
+    return ( gm_address, formataddr( (gm_attribution, gm_address) ), gm_attribution )
 
 def new_campaign(name, full_from, language):
     name, sender = parseaddr(full_from)
@@ -135,7 +142,7 @@ def all_characters(cid):
 def get_character(cid, short_form):
     """Returns a dictionary with keys name, address, controller, is_npc"""
     
-    key ='campaign-%s-%s' % (str(cid), short_form)
+    key ='character-%s-%s' % (str(cid), short_form)
     if t.has_key(key):
         return  t.get_object(key)
     return None
