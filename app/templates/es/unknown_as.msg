@@ -1,15 +1,10 @@
 {% extends "es/service_base.msg" %}
+{%- import "es/macros.jinja" as macros %}
 {% block service_content %}
 Ud. especificó como remitente de su mensaje a un personaje inválido
 (as-{{ sender_as }}).
 
-Personajes actuales:
-
-{% for character in all_characters %}
-
-* {{ character.address }}: {{ character.name }} ({%- if character.is_npc %} PNJ {%- else -%} PJ {%- endif -%})
-
-{% endfor %}
+{{ macros.character_list(all_characters) }}
 
 Por favor especifique un personaje válido y vuelva a enviar el mensaje
 original.

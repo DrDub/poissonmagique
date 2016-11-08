@@ -106,7 +106,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
         ( full_name, short_form ) = full_name.split('(')
         full_name = full_name.strip()
         if ')' in short_form:
-            short_from = short_form.split(')')[0].strip()
+            short_form = short_form.split(')')[0].strip()
     else:
         short_form = full_name.split(' ')[0]
         full_name = full_name.strip()
@@ -114,6 +114,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
     if c.character_exists(cid, short_form):
         all_characters = c.all_characters(cid)
+        print repr(all_characters)
         msg = view.respond(locals(), "%s/repeated_short_form.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],

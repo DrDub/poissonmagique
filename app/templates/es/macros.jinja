@@ -1,0 +1,6 @@
+{%- macro character_list(all_characters) -%}
+Personajes actuales:
+{% for character in all_characters %}
+* {{ character.address }}: {{ character.name }} ({%- if int(character.is_npc) %}PNJ{%- else -%}PJ{%- endif -%})
+{%- endfor -%}
+{% endmacro %}

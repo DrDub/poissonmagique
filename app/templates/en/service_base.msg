@@ -1,9 +1,7 @@
 {% extends "en/base.msg" %}
-{% block content %}
+{%- block content -%}
 Hi,
-
 {% block service_content %}{% endblock %}
 
 Poisson Magique server at {{ server_name }}
-
 {% endblock %}

@@ -1,4 +1,4 @@
-{%block content %}{% endblock %}
+{% block content %}{% endblock %}
 {{ full_content }}
 
 

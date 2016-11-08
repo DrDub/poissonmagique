@@ -129,7 +129,7 @@ def all_characters(cid):
     short_forms = t.list_elems('campaign-%s-characters' % (str(cid),))
     result = []
     for short_form in short_forms:
-        result.append(t.get_object('campaign-%s-%s' % (str(cid), short_form)))
+        result.append(t.get_object('character-%s-%s' % (str(cid), short_form)))
     return result
 
 def get_character(cid, short_form):
