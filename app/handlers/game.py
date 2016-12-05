@@ -1,12 +1,12 @@
 import logging
 from email.utils import parseaddr, formataddr
-from config.settings import relay, owner_email, silent, server_name_config
+from config.settings import owner_email, silent, server_name_config
 from salmon.routing import route, route_like, stateless, Router
 from salmon.bounce import bounce_to
 from salmon.mail import MailResponse
 from salmon import view
 from salmon.server import SMTPError
-from app.model.emails import tst_email_processed
+from app.model.emails import tst_email_processed, send_or_queue
 import app.model.campaign as c
 from app.model.campaign import INTERNAL, UNKNOWN
 from app.model.dice import find_roll, set_roll_outcome
@@ -65,8 +65,42 @@ def _new_campaign(message, lang, service_address):
                       (service_address, server_name,
                            safe_unicode(message['from']),
                       str(cid), campaign_name))
-    relay.deliver(msg)
+    send_or_queue(msg, cid)
     return
+
+@route("pm-new-attribution@(host)")
+@stateless
+def NEW_ATTRIBUTION(message, host=None):
+    service_address = 'pm-new-attribution'
+    server_name = server_name_config
+    
+    # check the sender is known
+    sender = c.place_sender(message)
+    if sender == INTERNAL:
+        logging.debug(u"INTERNAL ignoring %s@%s from %s" %
+                      (service_address, server_name, message['from']))
+        return # ignore
+    if sender == UNKNOWN:
+        if silent:
+            logging.debug(u"UNKNOWN ignoring %s@%s from %s" %
+                      (service_address, server_name, message['from']))
+            return
+        raise SMTPError(550, "Unknown sender")
+    
+    cid = sender[0]
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    attribution = message['subj']
+
+    full_content = "NOT IMPLEMENTED YET: " + service_address
+    msg = view.respond(locals(), "%s/base.msg" % (lang,),
+        From="%s@%s" % (service_address, server_name,),
+        To=gm_full,
+        Subject=full_content)
+    logging.debug(u"NOT IMPLEMENTED YET %s attribute to %s" % (message['from'],attribution))
+    send_or_queue(msg, cid)
+    return # ignore
+
                        
 @route("pm-new-(pc_or_npc)pc@(host)", pc_or_npc="n?")
 @stateless
@@ -123,7 +157,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
         logging.debug(u"DUPLICATE short form %s, campaign %s" %
                         (short_form, str(cid)))
-        relay.deliver(msg)
+        send_or_queue(msg, cid)
         return
 
     if pc_or_npc:
@@ -140,7 +174,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
         logging.debug(u"NEW_NPC short form %s, campaign %s" %
                         (short_form, str(cid)))
-        relay.deliver(msg)
+        send_or_queue(msg, cid)
         return
     else:
         # create PC, associate it with current campaign and generate
@@ -157,7 +191,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
         logging.debug(u"NEW_PC short form %s, enroll at %s, campaign %s" %
                         (short_form, enrollment_address, str(cid)))
-        relay.deliver(msg)
+        send_or_queue(msg, cid)
         return
 
 @route("pm-enroll-(nonce)@(host)", nonce=".+")
@@ -207,7 +241,7 @@ def ENROLL(message, nonce, host=None):
 
     logging.debug(u"ENROLLED short form %s, enrolled at %s, campaign %s" %
                       (short_form, service_address, str(cid)))
-    relay.deliver(msg)
+    send_or_queue(msg, cid)
 
     (gm_address, gm_full, attribution) = c.campaign_gm(cid)
     msg = view.respond(locals(), "%s/enrolled_gm.msg" % (lang,),
@@ -215,12 +249,14 @@ def ENROLL(message, nonce, host=None):
                            To=gm_full,
                            Subject=view.render(locals(),
                                                    "%s/enrolled_gm.subj" % (lang,)))
-    relay.deliver(msg)
+    send_or_queue(msg, cid)
     return
     
 @route("pm-end@(host)")
 @stateless
 def GAME_END(message, host=None):
+    service_address = 'pm-end'
+    
     sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore    
@@ -231,9 +267,20 @@ def GAME_END(message, host=None):
     if sender[1]:
         # TODO GM, pack and go
         sender = sender
+        logging.debug(u"NOT IMPLEMENTED YET end game request from %s" % (message['from']))
     else:
         # TODO PC, drop to NPC and inform the GM
         sender = sender
+        logging.debug(u"NOT IMPLEMENTED YET end game request from %s" % (message['from']))
+
+    full_content = "NOT IMPLEMENTED YET: " + service_address
+    msg = view.respond(locals(), "%s/base.msg" % (lang,),
+        From="%s@%s" % (service_address, server_name,),
+        To=gm_full,
+        Subject=full_content)
+    send_or_queue(msg, cid)
+    return # ignore
+
 
 # main entry point, messaging the GM/Character
 @route("(address)@(host)", address=".+")
@@ -282,7 +329,7 @@ def START(message, address=None, host=None):
                                 To=gm_full,
                                 Subject=view.render(locals(),
                                                "%s/repeated_as.subj"  % (lang,)))
-                    relay.deliver(msg)
+                    send_or_queue(msg, cid)
                     return
                 send_as = recipient[3:].lower()
 
@@ -301,7 +348,7 @@ def START(message, address=None, host=None):
                                    To=gm_full,
                                    Subject=view.render(locals(),
                                                 "%s/unknown_as.subj"  % (lang,)))
-                relay.deliver(msg)
+                send_or_queue(msg, cid)
                 return
 
         if send_as:
@@ -335,7 +382,7 @@ def START(message, address=None, host=None):
                                     To=gm_full,
                                     Subject=full_content)
                 logging.debug(u"INVALID character %s" % (recipient,))
-                relay.deliver(msg)
+                send_or_queue(msg, cid)
                 return # ignore
             
             cc_list = []                    
@@ -356,7 +403,7 @@ def START(message, address=None, host=None):
                                     To=gm_full,
                                     Subject=full_content)
                         logging.debug(u"INVALID character %s" % (othert,))
-                        relay.deliver(msg)
+                        send_or_queue(msg, cid)
                         return # ignore
                     
                     cc_list.append(formataddr( (other_character['name'], '%s@%s' % (other,server_name,)) ))
@@ -370,7 +417,7 @@ def START(message, address=None, host=None):
                             Subject=campaign_name)
             if cc_list:
                 msg['cc'] = ", ".join(cc_list)
-            relay.deliver(msg)
+            send_or_queue(msg, cid)
     else:
         short_form = sender[2]
         full_character = c.get_character(cid, short_form)
@@ -398,6 +445,6 @@ def START(message, address=None, host=None):
                             Subject="%s: %s" % (campaign_name, full_character['name']))
         if cc_list:
                 msg['cc'] = ", ".join(cc_list)
-        relay.deliver(msg)
+        send_or_queue(msg, cid)
         return
 

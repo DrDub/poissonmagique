@@ -103,7 +103,7 @@ def campaign_gm(cid):
     gm_attribution = t.get('ext-email-%s-attribution' % (gm_address,))
     return ( gm_address, formataddr( (gm_attribution, gm_address) ), gm_attribution )
 
-def new_campaign(name, full_from, language):
+def new_campaign(campaign_name, full_from, language):
     name, sender = parseaddr(full_from)
     cid = t.increment('campaign-counter')
 
@@ -112,7 +112,7 @@ def new_campaign(name, full_from, language):
     t.delete_key('ext-email-%s-bouncing' % (sender,))
     t.set_key('ext-email-%s-attribution' % (sender,), name)
 
-    t.create_object('campaign-%s' % (str(cid),), gm=sender, name=name, language=language)
+    t.create_object('campaign-%s' % (str(cid),), gm=sender, name=campaign_name, language=language)
 
     return cid
     

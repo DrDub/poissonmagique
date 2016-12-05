@@ -4,6 +4,7 @@ import os
 
 
 handlers = ['app.handlers.game', 'app.handlers.log', 'app.handlers.dice']
+sender_handlers = ['app.handlers.send']
 
 server_name_config = 'localhost'
 
@@ -23,5 +24,9 @@ relay_config = {'host': relay_name_config, 'port': 25}
 receiver_config = { 'host': server_name_config, 'port': 1220 }
 
 router_defaults = {'host': '((%s)|(localhost))' % ( server_name_config, ) }
+
+sender_queue_sleep = 30
+SENDER_QUEUE_PATH = "run/send"
+
 
 # the config/boot.py will turn these values into variables set in settings

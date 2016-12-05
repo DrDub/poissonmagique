@@ -73,6 +73,7 @@ hubbed_hosts for exim4 (see below).
 
 ```bash
 $ salmon start
+$ salmon start --boot config.sender --pid run/sender.pid 
 ```
 
 

@@ -1,4 +1,4 @@
-{% extends "base.msg" %}
+{% extends "es/base.msg" %}
 {%- block content -%}
 Hola,
 {% block service_content %}{% endblock %}
