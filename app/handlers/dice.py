@@ -2,9 +2,7 @@ import logging
 from config.settings import relay, server_name_config
 from salmon.routing import route, route_like, stateless, Router
 from salmon import view
-#from app.model.character import find_character
-#from app.model.dice import find_roll, set_roll_outcome
-from utils.unicode_helper import safe_unicode
+from app.model.unicode_helper import safe_unicode
 
 @route("pm-dice-(rollid)@(host)", rollid="\d+")
 @stateless

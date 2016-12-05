@@ -8,18 +8,17 @@ import time
 import logging
 
 
-@route("(address)@(host)", address=".+")
+@route("(address)@(host)", address=".+", host=".+")
 @stateless
 def START(message, address=None, host=None):
     if tst_email_sent(message):
-        logging.debug("Ignoring message already uploaded: %s / %s",
-                      message['X-Poisson-Magique-ID'], get_message_id(message))
-        return 
+        logging.debug("Ignoring message already sent: %s", message['X-Poisson-Magique-ID'])
+        return
 
     attempts = 0
     while attempts < 10:
         try:
-            relay.send(msg)
+            relay.deliver(msg)
             return
         except SMTPException as err:
             logging.debug(u"SENDER ERROR %s to %s from %s - retrying %s " %

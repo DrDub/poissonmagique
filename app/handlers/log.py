@@ -1,6 +1,5 @@
 from salmon.routing import route, stateless, nolocking, Router
 from salmon import queue
-import game
 
 @route("(to)@(host)", to=".+", host=".+")
 @stateless

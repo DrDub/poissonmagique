@@ -6,11 +6,11 @@ from salmon.bounce import bounce_to
 from salmon.mail import MailResponse
 from salmon import view
 from salmon.server import SMTPError
-from app.model.emails import tst_email_processed, send_or_queue
+from app.model.emails import tst_email_processed, send_or_queue, sanitize
 import app.model.campaign as c
 from app.model.campaign import INTERNAL, UNKNOWN
 from app.model.dice import find_roll, set_roll_outcome
-from utils.unicode_helper import safe_unicode
+from app.model.unicode_helper import safe_unicode
 
 #@route(".+")
 #def GM_BOUNCE(message):
@@ -437,7 +437,7 @@ def START(message, address=None, host=None):
         cc_list = sorted(cc_list)
 
         # extract the text
-        full_content = message.body()
+        full_content = sanitize(message.body())
         #TODO check message.base.parts
         msg = view.respond(locals(), "%s/base.msg" % (lang,),
                             From=formataddr( (full_character['name'], "%s@%s" % (short_form, server_name)) ),
