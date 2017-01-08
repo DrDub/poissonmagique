@@ -142,7 +142,7 @@ def all_characters(cid):
 def get_character(cid, short_form):
     """Returns a dictionary with keys name, address, controller, is_npc"""
     
-    key ='character-%s-%s' % (str(cid), short_form)
+    key ='character-%s-%s' % (str(cid), short_form.lower())
     if t.has_key(key):
         return  t.get_object(key)
     return None

@@ -29,10 +29,10 @@ def _parse(roll_str):
     terms = re.split('\s*[\<\>]\s*', roll_str)
     limit = int(terms[1])
     
-    tokens0 = re.split('\s+', terms[0])
+    tokens0 = re.split('\s+', terms[0].strip())
     tokens1 = []
     for tok in tokens0:
-        if '+' in tok:
+        if '+' in tok and not tok == '+':
             plus_tok = tok.split('+')
             first = True
             for t in plus_tok:
@@ -40,12 +40,14 @@ def _parse(roll_str):
                     first = False
                 else:
                     tokens1.append('+')
+                if len(t) == 0:
+                    continue
                 tokens1.append(t)
         else:
             tokens1.append(tok)
     tokens = []
     for tok in tokens1:
-        if '-' in tok:
+        if '-' in tok and not tok == '-':
             minus_tok = tok.split('-')
             first = True
             for t in minus_tok:
@@ -53,6 +55,8 @@ def _parse(roll_str):
                     first = False
                 else:
                     tokens.append('-')
+                if len(t) == 0:
+                    continue
                 tokens.append(t)
         else:
             tokens.append(tok)
@@ -77,18 +81,18 @@ def _parse(roll_str):
 def add_roll(campaign, character, roll_str):
    """Adds a roll, might throw a RollStrParseException if the roll_str does not validate."""
 
-    _parse(roll_str) # validate
+   _parse(roll_str) # validate
 
-    while True:
+   while True:
         hashid = hashlib.sha256("%s-%s-%d" %
-                                   (cid, character, random.randint(0,9001))).hexdigest()[0:10]
+                                   (campaign, character, random.randint(0,9001))).hexdigest()[0:10]
         roll_key = 'roll-%s' % (hashid,)
         if not t.has_key(roll_key):
             break
 
-    t.create_object(roll_key, { 'campaign' : campaign, 'character' : character, 'roll': roll_str })
-    t.add_to_list('campaign-' + campaign, hashid)
-    return hashid
+   t.create_object(roll_key, campaign=campaign, character=character, roll=roll_str)
+   t.add_to_list('campaign-rolls-' + campaign, hashid)
+   return hashid
 
 
 def _find_roll(hashid):
@@ -100,12 +104,12 @@ def _find_roll(hashid):
 
 def find_roll(hashid):
    """Find a roll and returns the campaign, character, roll_str or None if not found or True if already rolled"""
-    obj = _find_roll(hashid)
-    if obj is None:
-        return obj
-    if 'rolled' in obj:
-        return True
-    return ( obj['campaign'], obj['character'], obj['roll_str'] )
+   obj = _find_roll(hashid)
+   if obj is None:
+       return obj
+   if 'rolled' in obj:
+       return True
+   return ( obj['campaign'], obj['character'], obj['roll'] )
 
 
 def execute_roll(hashid):
@@ -119,7 +123,7 @@ def execute_roll(hashid):
         return obj
     if 'rolled' in obj:
         value_str, check = obj['rolled'].split(" ")
-        return ( int(value_str), bool(check), obj['roll'] )
+        return ( int(value_str), check == "True", obj['roll'] )
 
     # parse and execute the roll_str
     ( parsed_tokens, is_less_than, limit ) = _parse( obj['roll'] )

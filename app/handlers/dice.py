@@ -1,4 +1,5 @@
 import logging
+from email.utils import parseaddr, formataddr
 from config.settings import owner_email, silent, server_name_config, relay
 from salmon.routing import route, route_like, stateless, Router
 from salmon import view
@@ -12,14 +13,14 @@ from app.model.campaign import INTERNAL, UNKNOWN
 from app.model.dice import find_roll, execute_roll, add_roll, RollStrParseException
 
 
-@route("pm-dice-(rollid)@(host)", rollid="\d+")
+@route("pm-dice-(rollid)@(host)", rollid="[a-f0-9]+")
 @stateless
 def DICE(message, rollid, host=None):
     service_address = 'pm-dice-' + rollid
     server_name = server_name_config
 
     # check the sender is known
-    sender = place_sender(message)
+    sender = c.place_sender(message)
     if sender == INTERNAL:
         logging.debug(u"INTERNAL ignoring %s@%s from %s" %
                       (service_address, server_name, message['from']))
@@ -43,7 +44,7 @@ def DICE(message, rollid, host=None):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/no_roll.subj" % (lang,)))        
+                                                    "%s/roll/no_roll.subj" % (lang,)))        
         send_or_queue(msg, cid)
         return
     if roll_obj is True:
@@ -53,7 +54,7 @@ def DICE(message, rollid, host=None):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/already_rolled.subj" % (lang,)))
+                                                    "%s/roll/already_rolled.subj" % (lang,)))
         send_or_queue(msg, cid)
         return
 
@@ -65,22 +66,24 @@ def DICE(message, rollid, host=None):
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/no_roll.subj" % (lang,)))
+                                                    "%s/roll/no_roll.subj" % (lang,)))
         send_or_queue(msg, cid)
         return
     
-    if not sender[1] and str(character) != sender[2]:
+    if not sender[1] and safe_unicode(roll_character).lower() != safe_unicode(sender[2]):
         # croak not the right person for this roll
+        you_are = sender[2]
+        intended_for = roll_character
         msg = view.respond(locals(), "%s/roll/wrong_person.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
                             Subject=view.render(locals(),
-                                                    "%s/wrong_person.subj" % (lang,)))
+                                                    "%s/roll/wrong_person.subj" % (lang,)))
         send_or_queue(msg, cid)
         return
 
     # perform the roll
-    ( roll, check ) = execute_roll(rollid)
+    ( roll, check, roll_str ) = execute_roll(rollid)
 
     # report back to the sender and GM (if they are different)
     (gm_address, gm_full, attribution) = c.campaign_gm(cid)
@@ -97,14 +100,14 @@ def DICE(message, rollid, host=None):
     send_or_queue(msg, cid)
 
     if not sender[1]:
-        character = c.get_character(cid, roll_character)
+        character = c.get_character(cid, sender[2])
         attribution = c.get_attribution(character['controller'])
         
-        msg = view.respond(locals(), "%s/rolled.msg" % (lang,),
+        msg = view.respond(locals(), "%s/roll/rolled.msg" % (lang,),
                                From="%s@%s" % (service_address, server_name,),
                                To= formataddr( (attribution, character['controller']) ),
                                Subject=view.render(locals(),
-                                                       "%s/rolled.subj"  % (lang,)))
+                                                       "%s/roll/rolled.subj"  % (lang,)))
         msg['cc'] = 'gm@%s' % (server_name,)
         send_or_queue(msg, cid)
         
@@ -116,6 +119,8 @@ def DICE(message, rollid, host=None):
 @stateless
 def ROLL(message, host=None):
     service_address = 'pm-roll'
+    server_name = server_name_config
+    
     sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore    
@@ -123,6 +128,9 @@ def ROLL(message, host=None):
         if silent:
             return
         raise SMTPError(550, "Unknown sender")
+    
+    cid = sender[0]
+    lang = c.campaign_language(cid)
     
     if not sender[1]:
         # croak only GMs can ask for rolls
@@ -142,8 +150,10 @@ def ROLL(message, host=None):
     for recipient in recipients:
         if recipient == 'gm':
             continue
+        if recipient == service_address:
+            continue
         this_character = c.get_character(cid, recipient)
-        if not this_character['is_npc']:
+        if not int(this_character['is_npc']):
             if character is not None:
                 # croak only one character per roll
                 msg = view.respond(locals(), "%s/roll/too_many_characters.msg" % (lang,),
@@ -175,13 +185,14 @@ def ROLL(message, host=None):
 
     # for each roll command, register a roll-id and send a pm-dice-(rollid) email
     if character is not None:
-        character = c.get_character(cid, character)
+        full_character = c.get_character(cid, character)
+        character = full_character
         attribution = c.get_attribution(character['controller'])
      
     for roll in rolls:
         try:
-            hashid = add_roll( cid, 'gm' if character is None else character, roll )
-            service_address = 'pm-dice-' + rollid
+            hashid = add_roll( cid, 'gm' if character is None else character['name'], roll )
+            service_address = 'pm-dice-' + hashid
 
             msg = view.respond(locals(), "%s/roll/to_roll.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name,),

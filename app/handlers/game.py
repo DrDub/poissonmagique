@@ -9,7 +9,6 @@ from salmon.server import SMTPError
 from app.model.emails import tst_email_processed, send_or_queue, sanitize
 import app.model.campaign as c
 from app.model.campaign import INTERNAL, UNKNOWN
-from app.model.dice import find_roll, set_roll_outcome
 from app.model.unicode_helper import safe_unicode
 
 #@route(".+")
@@ -36,6 +35,8 @@ def _new_campaign(message, lang, service_address):
     sender = c.place_sender(message)
     if sender == INTERNAL:
         return # ignore
+
+    server_name = server_name_config        
     if sender != UNKNOWN:
         msg = "Already playing"
         if type(sender) is tuple:
@@ -48,7 +49,6 @@ def _new_campaign(message, lang, service_address):
     
     # use subject for name of campaign
     campaign_name = message['subject']
-    server_name = server_name_config
     
     # create campaign, set language to lang
     cid = c.new_campaign(campaign_name, message['from'], lang)
@@ -393,7 +393,7 @@ def START(message, address=None, host=None):
                     # this will be ignored by the server, but notifies
                     # the users unless is a send-as which will
                     # highlight the send-as to the players
-                    cc_list.append('%s@%s' % (recipient, server_name))
+                    cc_list.append('%s@%s' % (other, server_name))
                 elif other != recipient:
                     other_character = c.get_character(cid, other)
                     if other_character is None:
