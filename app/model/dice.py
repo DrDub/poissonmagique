@@ -84,8 +84,7 @@ def add_roll(campaign, character, roll_str):
    _parse(roll_str) # validate
 
    while True:
-        hashid = hashlib.sha256("%s-%s-%d" %
-                                   (campaign, character, random.randint(0,9001))).hexdigest()[0:10]
+        hashid = hashlib.sha256("%s-%s-%d" % ( repr(campaign), repr(character), random.randint(0,9001) )).hexdigest()[0:10]
         roll_key = 'roll-%s' % (hashid,)
         if not t.has_key(roll_key):
             break
