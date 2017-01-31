@@ -192,13 +192,15 @@ def ROLL(message, host=None):
     for roll in rolls:
         try:
             hashid = add_roll( cid, 'gm' if character is None else character['name'], roll )
-            service_address = 'pm-dice-' + hashid
+            return_service_address = 'pm-dice-' + hashid
+            roll_address = "%s@%s" % (return_service_address, server_name,)
 
             msg = view.respond(locals(), "%s/roll/to_roll.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name,),
                             To=gm_full if character is None else character['controller'],
                             Subject=view.render(locals(),
                                                    "%s/roll/to_roll.subj"  % (lang,)))
+            msg['Reply-To'] = roll_address
         except RollStrParseException as e:
             msg = view.respond(locals(), "%s/roll/syntax_error.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name,),
