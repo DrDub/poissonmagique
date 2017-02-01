@@ -191,7 +191,7 @@ def ROLL(message, host=None):
      
     for roll in rolls:
         try:
-            hashid = add_roll( cid, 'gm' if character is None else character['name'], roll )
+            hashid = add_roll( cid, 'gm' if character is None else character['address'], roll )
             return_service_address = 'pm-dice-' + hashid
             roll_address = "%s@%s" % (return_service_address, server_name,)
 
