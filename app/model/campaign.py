@@ -126,6 +126,11 @@ def get_attribution(full_from):
         
     return name
 
+def set_attribution(full_from, new_attribution):
+    name, sender = parseaddr(full_from)
+    t.set_key('ext-email-%s-attribution' % (sender,), new_attribution)
+    return new_attribution
+
 def character_exists(cid, short_form):
     return t.has_key('character-%s-%s' % (str(cid), short_form))
 

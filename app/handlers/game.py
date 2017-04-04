@@ -90,16 +90,17 @@ def NEW_ATTRIBUTION(message, host=None):
     cid = sender[0]
     lang = c.campaign_language(cid)
     campaign_name = c.campaign_name(cid)
-    attribution = message['subj']
+    attribution = message['subject']
+    c.set_attribution(message['from'], attribution)
 
-    full_content = "NOT IMPLEMENTED YET: " + service_address
-    msg = view.respond(locals(), "%s/base.msg" % (lang,),
-        From="%s@%s" % (service_address, server_name,),
-        To=gm_full,
-        Subject=full_content)
-    logging.debug(u"NOT IMPLEMENTED YET %s attribute to %s" % (message['from'],attribution))
+    msg = view.respond(locals(), "%s/new_attribution.msg" % (lang,),
+                           From="%s@%s" % (service_address, server_name),
+                           To=message['from'],
+                           Subject=view.render(locals(),
+                                               "%s/new_attribution.subj"  % (lang,)))
+    logging.debug(u"New attribution: %s attribute to %s" % (message['from'],attribution))
     send_or_queue(msg, cid)
-    return # ignore
+    return
 
                        
 @route("pm-new-(pc_or_npc)pc@(host)", pc_or_npc="n?")
