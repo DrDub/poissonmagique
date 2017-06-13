@@ -246,7 +246,7 @@ def ENROLL(message, nonce, host=None):
 
     (gm_address, gm_full, attribution) = c.campaign_gm(cid)
     msg = view.respond(locals(), "%s/enrolled_gm.msg" % (lang,),
-                           From="%s@%s" % (service_address, server_name),
+                           From="pm-enroll@%s" % (server_name,),
                            To=gm_full,
                            Subject=view.render(locals(),
                                                    "%s/enrolled_gm.subj" % (lang,)))
@@ -301,6 +301,8 @@ def GAME_END(message, host=None):
 @route("pm-unenroll-(nonce)@(host)")
 @stateless
 def PC_END(message, nonce, host=None):
+    # drop to NPC and inform the GM
+
     service_address = 'pm-unenroll-%s' % (nonce,)
     server_name = server_name_config        
     
@@ -339,9 +341,16 @@ def PC_END(message, nonce, host=None):
                            Subject=view.render(locals(),
                                                    "%s/unenrolled_pc.subj" % (lang,)))
     send_or_queue(msg, cid)
+
+    # inform the GM
+    (gm_address, gm_full, attribution) = c.campaign_gm(cid)
+    msg = view.respond(locals(), "%s/unenrolled_gm.msg" % (lang,),
+                           From="pm-unenrolled@%s" % (server_name,),
+                           To=gm_full,
+                           Subject=view.render(locals(),
+                                                   "%s/unenrolled_gm.subj" % (lang,)))
+    send_or_queue(msg, cid)    
     return
-
-
 
 # main entry point, messaging the GM/Character
 @route("(address)@(host)", address=".+")
@@ -510,4 +519,3 @@ def START(message, address=None, host=None):
         return
 
         
-# drop to NPC and inform the GM
