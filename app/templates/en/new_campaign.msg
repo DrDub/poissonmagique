@@ -31,7 +31,7 @@ address
   as-alice@{{ server_name }}
 
 By using this Poisson Magique server at {{ server_name }} you agree to
-license your emails under CC-BY-SA 3.0 licence.
+license your emails under CC-BY-SA 3.0 license.
 
 To finish this campaign, send an email to
 

@@ -28,5 +28,6 @@ router_defaults = {'host': '((%s)|(localhost))' % ( server_name_config, ) }
 sender_queue_sleep = 30
 SENDER_QUEUE_PATH = "run/send"
 
+campaigns_report_folder = 'run/campaigns'
 
 # the config/boot.py will turn these values into variables set in settings

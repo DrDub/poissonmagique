@@ -1,5 +1,6 @@
-from config.settings import server_name
+from config.settings import server_name_config
 from email.utils import parseaddr, formataddr, getaddresses
+from emails import purge_pc_emails
 import table as t
 import logging
 import re
@@ -34,7 +35,7 @@ def set_bouncing(message):
 
 def is_internal(address):
     (local_part, domain) = address.split('@')
-    return domain == server_name
+    return domain == server_name_config
 
 def place_sender(message):
     """ 
@@ -67,7 +68,7 @@ def get_recipients(message):
     result = []
     for address in addresses:
         (localpart, domain) = address.split('@')
-        if domain == server_name:
+        if domain == server_name_config:
             result.append(localpart.lower())
     return result
     
@@ -231,9 +232,12 @@ def start_unenrollment(cid, short_form):
 
 def do_unenrollment(cid, nonce):
     unenrollment_key = 'unenrollment-%s' % (nonce,)
+    unenrollment = t.get_object(unenrollment_key)
     t.delete_key(unenrollment_key)
 
-
+    cid = unenrollment['campaign']
+    short_form = unenrollment['character']
+    
     character_key = 'character-%s-%s' % (cid, short_form)
     email = t.get_field(character_key, 'controller')
     attribution = t.get_key('ext-email-%s-attribution' % (email,))
@@ -245,3 +249,32 @@ def do_unenrollment(cid, nonce):
     t.delete_key('ext-email-%s-character' % (email,))
     t.delete_key('ext-email-%s-bouncing' % (email,))
     t.delete_key('ext-email-%s-attribution' % (email,))
+
+    purge_pc_emails(email)
+
+def delete_campaign(cid):
+    emails_to_delete = list()
+    gm_email = t.get_field('campaign-%s' % (cid,), 'gm')
+    t.delete_key('campaign-%s' % (cid,))
+    emails_to_delete.append(gm_email)
+
+    short_forms = t.list_elems('campaign-%s-characters' % (str(cid),))
+    t.delete_key('campaign-%s-characters')
+
+    for short_form in short_forms:
+        character_key = 'character-%s-%s' % (str(cid), short_form)
+        character = t.get_object(character_key)
+        t.delete_key(character_key)
+        if 'enrollment' in character:
+            t.delete_key('enrollment-%s' % character['enrollment'])
+        if 'unenrollment' in character:
+            t.delete_key('unenrollment-%s' % character['unenrollment'])
+        if not int(character['is_npc']):
+            emails_to_delete.append(character['controller'])
+
+    for email in emails_to_delete:
+        t.delete_key('ext-email-%s-campaign' % (email,))
+        t.delete_key('ext-email-%s-character' % (email,))
+        t.delete_key('ext-email-%s-is-gm' % (email,))
+        t.delete_key('ext-email-%s-bouncing' % (email,))
+        t.delete_key('ext-email-%s-attribution' % (email,))

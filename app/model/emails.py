@@ -60,3 +60,22 @@ def sanitize(body_text):
         cleaned_line = "[EMAIL]".join(re.split("[A-Za-z0-9\.\_\+\-]+\@[A-Za-z0-9\_\-]+\.[A-Za-z0-9\.\-]+", line))
         new_text = new_text + cleaned_line + "\n"
     return new_text
+
+
+def purge_pc_emails(email):
+    """Delete emails when a PC abandons the game"""
+    
+    full_queue = Router.FULL_QUEUE
+    messages = list()
+    
+    for key in full_queue.keys():
+        msg = full_queue.get(key)
+
+        name, sender = parseaddr(msg['From'])
+        if sender == email:
+            messages.append(key)
+            
+    # delete messages from full queue
+    for key in messages:
+        full_queue.remove(key)
+        

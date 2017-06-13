@@ -1,6 +1,6 @@
 import logging
 from email.utils import parseaddr, formataddr
-from config.settings import owner_email, silent, server_name_config
+from config.settings import owner_email, silent, server_name_config, campaign_reports_url_config
 from salmon.routing import route, route_like, stateless, Router
 from salmon.bounce import bounce_to
 from salmon.mail import MailResponse
@@ -8,6 +8,7 @@ from salmon import view
 from salmon.server import SMTPError
 from app.model.emails import tst_email_processed, send_or_queue, sanitize
 import app.model.campaign as c
+from app.model.end_campaign import end_campaign
 from app.model.campaign import INTERNAL, UNKNOWN
 from app.model.unicode_helper import safe_unicode
 
@@ -149,7 +150,6 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
 
     if c.character_exists(cid, short_form):
         all_characters = c.all_characters(cid)
-        print repr(all_characters)
         msg = view.respond(locals(), "%s/repeated_short_form.msg" % (lang,),
                             From="%s@%s" % (service_address, server_name),
                             To=message['from'],
@@ -272,15 +272,25 @@ def GAME_END(message, host=None):
     campaign_name = c.campaign_name(cid)
     
     if sender[1]:
-        # TODO GM, pack and go
-        sender = sender
-        logging.debug(u"NOT IMPLEMENTED YET end game request from %s" % (message['from']))
-        full_content = "NOT IMPLEMENTED YET: " + service_address
-        msg = view.respond(locals(), "%s/base.msg" % (lang,),
-            From="%s@%s" % (service_address, server_name,),
-            To=gm_full,
-            Subject=full_content)
-        send_or_queue(msg, cid)
+        # GM, pack and go
+
+        all_characters = c.all_characters(cid)
+        emails = set() # save emails before the purge
+        for character in all_characters:
+            emails.add(character['controller'])
+
+        report_id  = end_campaign(cid)
+        report_url = '%s/%s.zip' % (campaign_reports_url_config, report_id)
+
+        for email in emails:
+            logging.debug(u"END_GAME request from gm, campaign %s" % (str(cid),))
+            full_content = "NOT IMPLEMENTED YET: " + service_address + ", download from " + report_url
+            
+            msg = view.respond(locals(), "%s/end_game.msg" % (lang,),
+                From="%s@%s" % (service_address, server_name,),
+                To=email,
+                Subject=view.render(locals(), "%s/end_game.subj" % (lang,)))
+            send_or_queue(msg, cid)
     else:
         # PC, generate unenrollment address
         short_form = sender[2]

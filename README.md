@@ -48,7 +48,7 @@ For Spanish campaigns, the email goes to
 
 pm-new-campaign-es@pm
 
-and the system is set to Spanish from them one.
+and the system is set to Spanish from there on.
 
 
 
@@ -75,7 +75,6 @@ hubbed_hosts for exim4 (see below).
 $ salmon start
 $ salmon start --boot config.sender --pid run/sender.pid 
 ```
-
 
 
 Exim4 Config
@@ -123,6 +122,14 @@ In poissonmagique/config/localsettings.py you will be setting
 server_name_config = 'your PM_DNS'
 relay_name_config = 'localhost'
 ```
+
+You might also want to set
+
+```python
+is_silent_config = True
+```
+
+to avoid backscatter spam when using a hubbed host.
 
 but your PM_DNS has to resolve locally to the bridge interface
 (10.10.0.50). So add that line to /etc/hosts:
