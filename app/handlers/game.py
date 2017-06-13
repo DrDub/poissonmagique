@@ -179,7 +179,7 @@ def NEW_CHARACTER(message, host=None, pc_or_npc="n"):
         return
     else:
         # create PC, associate it with current campaign and generate
-        # enrolment email
+        # enrollment email
         enrollment_address = c.new_pc(cid, short_form, full_name)
         all_characters = c.all_characters(cid)
 
@@ -257,6 +257,7 @@ def ENROLL(message, nonce, host=None):
 @stateless
 def GAME_END(message, host=None):
     service_address = 'pm-end'
+    server_name = server_name_config        
     
     sender = c.place_sender(message)
     if sender == INTERNAL:
@@ -265,22 +266,81 @@ def GAME_END(message, host=None):
         if silent:
             return
         raise SMTPError(550, "Unknown sender")
+
+    cid = sender[0]
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    
     if sender[1]:
         # TODO GM, pack and go
         sender = sender
         logging.debug(u"NOT IMPLEMENTED YET end game request from %s" % (message['from']))
+        full_content = "NOT IMPLEMENTED YET: " + service_address
+        msg = view.respond(locals(), "%s/base.msg" % (lang,),
+            From="%s@%s" % (service_address, server_name,),
+            To=gm_full,
+            Subject=full_content)
+        send_or_queue(msg, cid)
     else:
-        # TODO PC, drop to NPC and inform the GM
-        sender = sender
-        logging.debug(u"NOT IMPLEMENTED YET end game request from %s" % (message['from']))
+        # PC, generate unenrollment address
+        short_form = sender[2]
+        unenrollment_address = t.start_unenrollment(cid, short_form)
+        
+        msg = view.respond(locals(), "%s/drop_pc.msg" % (lang,),
+                            From="%s@%s" % (service_address, server_name),
+                            To=message['from'],
+                            Subject=view.render(locals(),
+                                                    "%s/drop_pc.subj" % (lang,)))
+        msg['Reply-To'] = "pm-unenroll-%s@%s" % (unenrollment_address, server_name)
 
-    full_content = "NOT IMPLEMENTED YET: " + service_address
-    msg = view.respond(locals(), "%s/base.msg" % (lang,),
-        From="%s@%s" % (service_address, server_name,),
-        To=gm_full,
-        Subject=full_content)
+        logging.debug(u"END_PC short form %s, unenroll at %s, campaign %s" %
+                        (short_form, unenrollment_address, str(cid)))
+        send_or_queue(msg, cid)
+    return
+
+@route("pm-unenroll-(nonce)@(host)")
+@stateless
+def PC_END(message, nonce, host=None):
+    service_address = 'pm-unenroll-%s' % (nonce,)
+    server_name = server_name_config        
+    
+    sender = c.place_sender(message)
+    if sender == INTERNAL:
+        logging.debug(u"INTERNAL ignoring %s@%s from %s" %
+                      (service_address, server_name, message['from']))        
+        return # ignore    
+    if sender == UNKNOWN:
+        if silent:
+            return
+        raise SMTPError(550, "Unknown sender")
+
+    unenrollment = c.find_unenrollment(nonce)
+
+    if unenrollment is None:
+        if silent:
+            logging.debug(u"INVALID code, ignoring %s@%s from %s" %
+                      (service_address, server_name, message['from']))
+            return
+        raise SMTPError(550, "Unenrollment code invalid")
+
+    (cid, short_form) = unenrollment
+
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    attribution = c.get_attribution(message['from'])
+    
+    c.do_unenrollment(cid, nonce)
+    logging.debug(u"UNENROLLED short form %s, unenrolled at %s, campaign %s" %
+                      (short_form, service_address, str(cid)))
+
+    msg = view.respond(locals(), "%s/unenrolled_pc.msg" % (lang,),
+                           From="%s@%s" % (service_address, server_name),
+                           To=message['from'],
+                           Subject=view.render(locals(),
+                                                   "%s/unenrolled_pc.subj" % (lang,)))
     send_or_queue(msg, cid)
-    return # ignore
+    return
+
 
 
 # main entry point, messaging the GM/Character
@@ -449,3 +509,5 @@ def START(message, address=None, host=None):
         send_or_queue(msg, cid)
         return
 
+        
+# drop to NPC and inform the GM

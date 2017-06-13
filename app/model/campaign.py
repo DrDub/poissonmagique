@@ -10,7 +10,7 @@ import random
 
 # campaign-counter -> int
 
-# ext-email-%email-campaign -> campaign id 24
+# ext-email-%email-campaign -> campaign id
 # ext-email-%email-character -> %localpart
 # ext-email-%email-is-gm -> true (other undefined)
 # ext-email-%email-bouncing -> true (other undefined)
@@ -20,8 +20,9 @@ import random
 # campaign-%cid-characters -> list of %localpart ("Alice", etc)
 # character-%cid-%localpart -> object ( name: %fullname,
 #    address: %localpart, controller: email, is_npc: "1/0",
-#    enrollment: "address" )
-# enrollment-%customlocalpart -> object( campaign: %cid, character: %locapart )
+#    enrollment: %nonce, unenrollment: %nonce, alt_attribution: string )
+# enrollment-%nonce -> object( campaign: %cid, character: %locapart )
+# unenrollment-%nonce -> object( campaign: %cid, character: %locapart )
 
 UNKNOWN = "UNKNOWN"
 INTERNAL = "INTERNAL"
@@ -175,8 +176,7 @@ def new_pc(cid, short_form, full_name):
         if not t.has_key(enrollment_key):
             break
 
-    t.create_object(enrollment_key,
-                        campaign=cid, character=short_form)
+    t.create_object(enrollment_key, campaign=cid, character=short_form)
     
     t.list_append('campaign-%s-characters' % (cid,), short_form)
     t.create_object( 'character-%s-%s' %(cid,short_form),
@@ -187,11 +187,17 @@ def new_pc(cid, short_form, full_name):
     return nonce
 
 def find_enrollment(nonce):
-    enrollment_key = 'enrollment-%s' % (nonce,)
-    if not t.has_key(enrollment_key):
+    return find_nonce('enrollment', nonce)
+
+def find_unenrollment(nonce):
+    return find_nonce('unenrollment', nonce)
+
+def find_nonce(nonce, what):
+    key = '%s-%s' % (what, nonce,)
+    if not t.has_key(key):
         return None
 
-    obj = t.get_object(enrollment_key)
+    obj = t.get_object(key)
 
     return obj['campaign'], obj['character']
 
@@ -207,3 +213,35 @@ def do_enrollment(cid, nonce, full_from, short_form):
     t.delete_key('ext-email-%s-is-gm' % (email,))
     t.set_key('ext-email-%s-character' % (email,), short_form)
     t.set_key('ext-email-%s-campaign' % (email,), cid)
+
+def start_unenrollment(cid, short_form):
+    while True:
+        nonce = hashlib.sha256("%s-%s-%d" %
+                                   (cid, short_form,
+                                        random.randint(0,9001))).hexdigest()[0:10]
+        unenrollment_key = 'unenrollment-%s' % (nonce,)
+        if not t.has_key(unenrollment_key):
+            break
+
+    t.create_object(unenrollment_key, campaign=cid, character=short_form)
+    t.set_field('character-%s-%s' %(cid,short_form), 'unenrollment', nonce)
+
+    return nonce
+    
+
+def do_unenrollment(cid, nonce):
+    unenrollment_key = 'unenrollment-%s' % (nonce,)
+    t.delete_key(unenrollment_key)
+
+
+    character_key = 'character-%s-%s' % (cid, short_form)
+    email = t.get_field(character_key, 'controller')
+    attribution = t.get_key('ext-email-%s-attribution' % (email,))
+    t.set_field(character_key, 'controller', t.get_field('campaign-%s' % (cid,), 'gm'))
+    t.set_field(character_key, 'is_npc', 1)
+    t.set_field(character_key, 'alt_attribution', attribution)
+
+    t.delete_key('ext-email-%s-campaign' % (email,))
+    t.delete_key('ext-email-%s-character' % (email,))
+    t.delete_key('ext-email-%s-bouncing' % (email,))
+    t.delete_key('ext-email-%s-attribution' % (email,))
