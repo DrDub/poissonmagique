@@ -273,6 +273,7 @@ def GAME_END(message, host=None):
     
     if sender[1]:
         # GM, pack and go
+        logging.debug(u"END_GAME request from gm, campaign %s" % (str(cid),))
 
         all_characters = c.all_characters(cid)
         emails = set() # save emails before the purge
@@ -283,9 +284,6 @@ def GAME_END(message, host=None):
         report_url = '%s/%s.zip' % (campaign_reports_url_config, report_id)
 
         for email in emails:
-            logging.debug(u"END_GAME request from gm, campaign %s" % (str(cid),))
-            full_content = "NOT IMPLEMENTED YET: " + service_address + ", download from " + report_url
-            
             msg = view.respond(locals(), "%s/end_game.msg" % (lang,),
                 From="%s@%s" % (service_address, server_name,),
                 To=email,
@@ -307,6 +305,49 @@ def GAME_END(message, host=None):
                         (short_form, unenrollment_address, str(cid)))
         send_or_queue(msg, cid)
     return
+
+@route("pm-summary@(host)")
+@stateless
+def GAME_SUMMARY(message, host=None):
+    service_address = 'pm-summary'
+    server_name = server_name_config        
+    
+    sender = c.place_sender(message)
+    if sender == INTERNAL:
+        return # ignore    
+    if sender == UNKNOWN:
+        if silent:
+            return
+        raise SMTPError(550, "Unknown sender")
+
+    cid = sender[0]
+    lang = c.campaign_language(cid)
+    campaign_name = c.campaign_name(cid)
+    
+    if not sender[1]:
+        if silent:
+            logging.debug(u"NOT_GM ignoring %s@%s from %s" %
+                      (service_address, server_name, message['from']))
+            return
+        raise SMTPError(550, "Not a GM")
+
+    logging.debug(u"GAME_SUMMARY request from gm, campaign %s" % (str(cid),))
+    
+    all_characters = c.all_characters(cid)
+    emails = set() # save emails before the purge
+    for character in all_characters:
+        emails.add(character['controller'])
+
+    report_id  = end_campaign(cid, purge=False)
+    report_url = '%s/%s.zip' % (campaign_reports_url_config, report_id)
+
+    msg = view.respond(locals(), "%s/game_summary.msg" % (lang,),
+                    From="%s@%s" % (service_address, server_name,),
+                    To=message['from'],
+                    Subject=view.render(locals(), "%s/game_summary.subj" % (lang,)))
+    send_or_queue(msg, cid)
+    return
+
 
 @route("pm-unenroll-(nonce)@(host)")
 @stateless
