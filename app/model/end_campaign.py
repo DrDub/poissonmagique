@@ -10,7 +10,7 @@ import random
 import codecs
 from subprocess import call
 from campaign import all_characters, campaign_gm, get_character, campaign_language, campaign_name, get_recipients, get_attribution, place_sender
-from emails import sanitize
+from emails import sanitize, get_message_id
 
 def end_campaign(cid, purge=True):
     """Ends a campaign, returns the list of email addresses to email,
@@ -37,10 +37,15 @@ def end_campaign(cid, purge=True):
     for email in emails_in_campaign:
         attribution_for_email[email] = get_attribution(email)
 
+    seen_ids = set()
     for key in full_queue.keys():
         msg = full_queue.get(key)
         if msg is None:
             continue
+        msg_id = get_message_id(msg)
+        if msg_id in seen_ids:
+            continue
+        seen_ids.add(msg_id)
 
         name, sender = parseaddr(msg['from'])
         if sender in emails_in_campaign:
@@ -182,20 +187,20 @@ Dice roll emails: %d
         msg = t['msg']
 
         # header (includes who send it, potentially as-XYZ and to/cc)
-        rcpts = ",".join(t['recipients'])
+        rcpts = ", ".join(t['recipients'])
         if 'dice' in t['flags']:
-            md.write("Dice Roll -> %s\n" % (rcpts,))
-            md.write("---------\n")
+            md.write(u"Dice Roll → %s\n" % (rcpts,))
+            md.write(u"---------\n")
         elif 'gm' in t['flags']:
             if 'as' in t['flags']:
-                md.write(u"%s (GM) -> %s\n" % (t['flags']['as'], rcpts))
-                md.write('------------------------\n')
+                md.write(u"%s (GM) → %s\n" % (t['flags']['as'], rcpts))
+                md.write(u'------------------------\n')
             else:
-                md.write(u"GM -> %s\n" % (rcpts,))
-                md.write('------------------------\n')                
+                md.write(u"GM → %s\n" % (rcpts,))
+                md.write(u'------------------------\n')                
         else:
-            md.write(u"%s (PC) -> %s\n" % (t['flags']['pc'] , rcpts))
-            md.write('------------------------\n')
+            md.write(u"%s (PC) → %s\n" % (t['flags']['pc'] , rcpts))
+            md.write(u'------------------------\n')
 
         md.write(t['key'] + "\n\n")
         md.write(u"Subject: %s\n\n" % (msg['subject'],))
@@ -207,15 +212,19 @@ Dice roll emails: %d
 
         #TODO typeset email
 
-
-
     #TODO end matter
 
-    # render to PDF
     md.close()
     tex.close()
 
-    #call("cd %s; pdflatex campaign.tex; pdflatex campaign.tex; pdflatex campaign.tex" % (tmp_folder,), shell=True)
+    # render to PDF
+    if os.path.exists("/usr/bin/pdflatex"):
+        pass
+        #call("cd %s; pdflatex campaign.tex; pdflatex campaign.tex; pdflatex campaign.tex" % (tmp_folder,), shell=True)
+
+    # render to HTML
+    if os.path.exists("/usr/bin/pandoc"):
+        call("cd %s; /usr/bin/pandoc campaign.md -o campaign.html" % (tmp_folder,), shell=True)
 
     # zip source texts + PDF to target_zip
     call("cd /tmp; /usr/bin/zip -r %s %s" % (os.path.realpath(target_zip), nonce), shell=True)
