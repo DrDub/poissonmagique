@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from config.settings import server_name_config, campaigns_report_folder
 from email.utils import parseaddr, formataddr, getaddresses, parsedate_tz, mktime_tz
 from salmon.routing import Router
@@ -43,7 +45,10 @@ def end_campaign(cid, purge=True):
         msg = full_queue.get(key)
         if msg is None:
             continue
-        msg_id = get_message_id(msg)
+        if not 'Message-ID' in msg:
+            msg_id = key
+        else:
+            msg_id = get_message_id(msg)
         if msg_id in seen_ids:
             continue
         seen_ids.add(msg_id)
