@@ -1,6 +1,7 @@
 from config.settings import server_name_config, campaigns_report_folder
 from email.utils import parseaddr, formataddr, getaddresses, parsedate_tz, mktime_tz
 from salmon.routing import Router
+from salmon import view
 import table as t
 import logging
 import re
@@ -111,77 +112,17 @@ def end_campaign(cid, purge=True):
     tex = codecs.open(tmp_folder + "/campaign.tex", 'w', 'utf-8')
     md = codecs.open(tmp_folder + "/campaign.md", 'w', 'utf-8')
 
-    tex_lang = "english"
-    if lang == "es":
-        tex_lang = "spanish"
-
-    tex.write(u"""
-\\documentclass[
-oneside,
-openright,
-titlepage,
-dottedtoc,
-numbers=noenddot,
-headinclude,
-footinclude=true,
-cleardoublepage=empty,
-abstractoff,
-paper=letter,
-fontsize=11pt,
-american
-]
-{scrreprt}
-\\PassOptionsToPackage{utf8}{inputenc}
-\\usepackage{inputenc}
-\\usepackage[%s]{babel}
-\\usepackage[pdfspacing]{classicthesis}
-
-\\parskip 1.5ex
-
-\\begin{document}
-\\selectlanguage{%s}
-
-""" % (tex_lang,tex_lang))
-    if lang == "en":
-        tex.write(u"""\\title{%s}
-\\subtitle{Poisson Magique Campaign Report}
-""" % (campaign_name_,)) 
-    elif lang == "es":
-        tex.write(u"""\\title{%s}
-\\subtitle{Reporte de Juego en Poisson Magique}
-""" % (campaign_name_,))
-        
-    tex.write(u"""\\maketitle
-""")
-
+    tex.write(view.render(locals(), "%s/campaign.tex" % (lang,)))
     # GM, PC players, NPC players, attributions, licence
     
-    md.write(u"Poisson Magique Campaign: %s\n" % (campaign_name_,))
-    md.write(u"===========================================\n\n\n")
-    md.write(u"Attributions\n")
-    md.write(u"------------\n\n")
-    md.write(u"GM: %s\n\n" % gm_attribution)
+    all_mails = len(messages)
+    print_characters = list()
     for character in campaign_characters:
-        md.write(u'%s %s (%s): %s\n\n' % ("NPC" if int(character['is_npc']) else "PC",
-            character['name'], character['address'],
-            character['alt_attribution'] if 'alt_attribution' in character else attribution_for_email[character['controller']]))
-
-    md.write(u"\nAll content under license CC-BY-SA\n\n")
-
-    # total number of emails sent
-    md.write(u"Numbers\n")
-    md.write(u"-------\n\n")
-    md.write(u"""Number of emails received: %d
-
-GM emails: %d (as NPCs %d)
-
-PC emails: %d
-
-Dice roll emails: %d
-
-""" % (len(messages), gm_emails, gm_emails_as_npcs, pc_emails, dice_rolls))
-
+        print_characters.append({ 'type' : ("NPC" if int(character['is_npc']) else "PC"),
+            'full_name': character['name'], 'short_form': character['address'],
+            'attribution' : (character['alt_attribution'] if 'alt_attribution' in character else attribution_for_email[character['controller']]) })
     # TODO start date, end date
+    md.write(view.render(locals(), "%s/campaign.md" % (lang,)))
 
     for t in messages:
         msg = t['msg']
@@ -189,7 +130,7 @@ Dice roll emails: %d
         # header (includes who send it, potentially as-XYZ and to/cc)
         rcpts = ", ".join(t['recipients'])
         if 'dice' in t['flags']:
-            md.write(u"Dice Roll → %s\n" % (rcpts,))
+            md.write(view.render(locals(), "%s/dice_roll.md" % (lang,)))
             md.write(u"---------\n")
         elif 'gm' in t['flags']:
             if 'as' in t['flags']:
@@ -203,7 +144,8 @@ Dice roll emails: %d
             md.write(u'------------------------\n')
 
         md.write(t['key'] + "\n\n")
-        md.write(u"Subject: %s\n\n" % (msg['subject'],))
+        if msg['subject']:
+            md.write(u"Subject: %s\n\n" % (msg['subject'],))
         
         # content
         full_content = sanitize(msg.body())
@@ -212,15 +154,13 @@ Dice roll emails: %d
 
         #TODO typeset email
 
-    #TODO end matter
-
     md.close()
     tex.close()
 
     # render to PDF
-    if os.path.exists("/usr/bin/pdflatex"):
-        pass
-        #call("cd %s; pdflatex campaign.tex; pdflatex campaign.tex; pdflatex campaign.tex" % (tmp_folder,), shell=True)
+    if os.path.exists("/usr/bin/pdflatex") and os.path.exists("/usr/bin/pandoc"):
+        call("cd %s; /usr/bin/pandoc campaign.md -o messages.tex" % (tmp_folder,), shell=True)
+        call("cd %s; pdflatex campaign.tex; pdflatex campaign.tex; pdflatex campaign.tex" % (tmp_folder,), shell=True)
 
     # render to HTML
     if os.path.exists("/usr/bin/pandoc"):
