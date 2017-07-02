@@ -5,13 +5,12 @@ Poisson Magique Campaign: {{ campaign_name_ }}
 Attributions
 ------------
 
-GM: {{ gm_attribution }}
-
+* GM: {{ gm_attribution }}
 {% for character in print_characters %}
-{{ character.type }} {{ character.full_name }} ({{ character.short_form }}): {{ character.attirbution }}
-{%- endfor -%}
+* {{ character.type }} {{ character.full_name }} ({{ character.short_form }}): {{ character.attribution }}
+{% endfor %}
 
-All content under license CC-BY-SA
+All content under license CC-BY-SA.
 
 Numbers
 -------
@@ -23,4 +22,5 @@ GM emails: {{ gm_emails }} (as NPCs {{ gm_emails_as_npcs }})
 PC emails: {{ pc_emails }}
 
 Dice roll emails: {{ dice_rolls }}
+
 

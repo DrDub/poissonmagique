@@ -76,6 +76,13 @@ $ salmon start
 $ salmon start --boot config.sender --pid run/sender.pid 
 ```
 
+To render the end of game reports you will need the following packages
+installed:
+
+* pandoc
+* texlive
+* texlive-latex-extra
+
 
 Exim4 Config
 ------------

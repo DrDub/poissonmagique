@@ -1,6 +1,6 @@
 # coding: utf-8
 
-from config.settings import server_name_config, campaigns_report_folder
+from config.settings import server_name_config, campaigns_report_folder, template_config
 from email.utils import parseaddr, formataddr, getaddresses, parsedate_tz, mktime_tz
 from salmon.routing import Router
 from salmon import view
@@ -11,9 +11,25 @@ import os
 import hashlib
 import random
 import codecs
+import jinja2
 from subprocess import call
 from campaign import all_characters, campaign_gm, get_character, campaign_language, campaign_name, get_recipients, get_attribution, place_sender
 from emails import sanitize, get_message_id
+
+LOADER = jinja2.Environment(
+    block_start_string = '\BLOCK{',
+    block_end_string = '}',
+    variable_start_string = '\VAR{',
+    variable_end_string = '}',
+    comment_start_string = '\#{',
+    comment_end_string = '}',
+    line_statement_prefix = '%%',
+    line_comment_prefix = '%#',
+    trim_blocks = True,
+    autoescape = False,
+    loader=jinja2.PackageLoader(template_config['dir'], 
+                                template_config['module']))
+
 
 def end_campaign(cid, purge=True):
     """Ends a campaign, returns the list of email addresses to email,
@@ -117,7 +133,7 @@ def end_campaign(cid, purge=True):
     tex = codecs.open(tmp_folder + "/campaign.tex", 'w', 'utf-8')
     md = codecs.open(tmp_folder + "/campaign.md", 'w', 'utf-8')
 
-    tex.write(view.render(locals(), "%s/campaign.tex" % (lang,)))
+    tex.write(LOADER.get_template("%s/campaign.tex" % (lang,)).render(locals()))
     # GM, PC players, NPC players, attributions, licence
     
     all_mails = len(messages)
@@ -128,6 +144,7 @@ def end_campaign(cid, purge=True):
             'attribution' : (character['alt_attribution'] if 'alt_attribution' in character else attribution_for_email[character['controller']]) })
     # TODO start date, end date
     md.write(view.render(locals(), "%s/campaign.md" % (lang,)))
+    md.write('\n\n')
 
     for t in messages:
         msg = t['msg']
@@ -136,7 +153,7 @@ def end_campaign(cid, purge=True):
         rcpts = ", ".join(t['recipients'])
         if 'dice' in t['flags']:
             md.write(view.render(locals(), "%s/dice_roll.md" % (lang,)))
-            md.write(u"---------\n")
+            md.write(u"\n---------\n")
         elif 'gm' in t['flags']:
             if 'as' in t['flags']:
                 md.write(u"%s (GM) → %s\n" % (t['flags']['as'], rcpts))
@@ -148,9 +165,9 @@ def end_campaign(cid, purge=True):
             md.write(u"%s (PC) → %s\n" % (t['flags']['pc'] , rcpts))
             md.write(u'------------------------\n')
 
-        md.write(t['key'] + "\n\n")
-        if msg['subject']:
-            md.write(u"Subject: %s\n\n" % (msg['subject'],))
+        # md.write(t['key'] + "\n\n")
+        # if msg['subject']:
+        #    md.write(u"Subject: %s\n\n" % (msg['subject'],))
         
         # content
         full_content = sanitize(msg.body())
